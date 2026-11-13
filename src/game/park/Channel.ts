@@ -1,3 +1,4 @@
+import { parkLook } from './atmosphere'
 import { channelScenery } from './scenicParks'
 import { launchWedge, flatSurface } from './features'
 import { surface, skyDome } from './materials'
@@ -175,15 +176,15 @@ export function buildChannel(): ParkData {
     [9, 35],
     [-9, 55],
     [9, 88],
-  ])
+  ], undefined, solids)
   addPlanters(group, [
     [-9.5, 45],
     [9.5, 72],
-  ])
+  ], solids)
   addBenches(group, [
     [10, 18],
     [-10, 62],
-  ])
+  ], undefined, solids)
   addFenceRun(group, -13.2, 8, 105)
   addFenceRun(group, 13.2, 8, 105)
 
@@ -209,7 +210,7 @@ export function buildChannel(): ParkData {
   flatSurface(group,0,52,8,12,0.18)
   channelScenery(group)
 
-  const sky = skyDome('#788ab3', '#e1bca8')
+  const sky = skyDome(parkLook('channel').sky,parkLook('channel').horizon)
   group.add(sky)
 
   return {

@@ -1,3 +1,4 @@
+import { parkLook } from './atmosphere'
 import { forestScenery } from './forestScenery'
 import { surface, skyDome } from './materials'
 import * as THREE from 'three'
@@ -130,16 +131,15 @@ export function buildForestLine(): ParkData {
       [8, 35],
       [-8, 72],
     ],
-    '#2c2620',
-  )
+    '#2c2620', solids)
   addPlanters(group, [
     [9, 50],
     [-9, 88],
-  ])
+  ], solids)
   addBenches(group, [
     [9.5, 20],
     [-9.5, 78],
-  ], '#5a4a38')
+  ], '#5a4a38', solids)
 
   forestScenery(group)
   // Former invisible pad tops now have matching visible geometry.
@@ -154,7 +154,7 @@ export function buildForestLine(): ParkData {
     const coping=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.03,d),steel())
     coping.position.set(x,y,z);group.add(coping)
   }
-  const sky = skyDome('#597d72', '#c4c7a8')
+  const sky = skyDome(parkLook('forest-line').sky,parkLook('forest-line').horizon)
   group.add(sky)
 
   return {

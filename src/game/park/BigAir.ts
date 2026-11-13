@@ -1,3 +1,4 @@
+import { parkLook } from './atmosphere'
 import { bigAirScenery } from './scenicParks'
 import { launchWedge, flatSurface } from './features'
 import { surface, skyDome } from './materials'
@@ -88,12 +89,12 @@ export function buildBigAir(): ParkData {
     [11, 35],
     [-11, 60],
     [11, 95],
-  ])
+  ], undefined, solids)
   addLamps(group, [
     [-12, 25],
     [12, 55],
     [-12, 85],
-  ])
+  ], solids)
   addFenceRun(group, -14.4, 5, 112)
   addFenceRun(group, 14.4, 5, 112)
 
@@ -109,7 +110,7 @@ export function buildBigAir(): ParkData {
   flatSurface(group,0,106,12,12,0.2)
   bigAirScenery(group)
 
-  const sky = skyDome('#688da7', '#e9d0ae')
+  const sky = skyDome(parkLook('big-air').sky,parkLook('big-air').horizon)
   group.add(sky)
 
   return {

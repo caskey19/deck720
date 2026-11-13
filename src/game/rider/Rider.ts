@@ -6,6 +6,10 @@ import type { KitSelection } from '../../storage/persist'
 export class Rider {
   readonly group = new THREE.Group()
   readonly board: THREE.Group
+  private deckArt = document.createElement('canvas')
+  private deckArtMap: THREE.CanvasTexture
+  private hood: THREE.Mesh
+  private sleeves: THREE.Mesh[] = []
   private feet = new THREE.Group()
   private body: THREE.Group
   private shirtMesh: THREE.Mesh
@@ -79,6 +83,7 @@ export class Rider {
     }
     // Hoodie hood, sleeve caps, nose and ears give the silhouette volume.
     const hood = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), this.shirtMesh.material)
+    this.hood = hood
     hood.scale.set(1, 0.7, 0.7)
     hood.position.set(0, 1.43, -0.11)
     this.shirtMesh.add(hood)
@@ -87,6 +92,7 @@ export class Rider {
       const sleeve = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.12, 3, 8), this.shirtMesh.material)
       sleeve.position.set(x, 0.08, 0)
       this.shirtMesh.add(sleeve)
+      this.sleeves.push(sleeve)
     }
     const nose = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), this.headMesh.material)
     nose.position.set(0, 0, 0.145)
@@ -156,10 +162,31 @@ export class Rider {
     this.shoeR.rotation.y = 1.35
 
     const grip = new THREE.Mesh(new THREE.ShapeGeometry(outline), new THREE.MeshStandardMaterial({color: '#24292b', roughness: 1}))
+    const gripUv = grip.geometry.getAttribute('uv')
+    for(let i=0;i<gripUv.count;i++)gripUv.setXY(i,(gripUv.getX(i)+0.14)/0.28,(gripUv.getY(i)+0.51)/1.02)
     grip.rotation.x = -Math.PI / 2
     grip.position.y = 0.02
     grip.scale.set(0.92, 0.96, 1)
+    const gripCanvas = document.createElement('canvas')
+    gripCanvas.width = 128; gripCanvas.height = 512
+    const gripCtx = gripCanvas.getContext('2d')!
+    gripCtx.fillStyle = '#252b2d'; gripCtx.fillRect(0,0,128,512)
+    let grainSeed = 721
+    for(let i=0;i<2200;i++){
+      grainSeed=(grainSeed*1664525+1013904223)>>>0
+      const x=grainSeed%128,y=(grainSeed>>>8)%512
+      gripCtx.fillStyle=i%2?'#303638':'#1a2021';gripCtx.fillRect(x,y,1,1)
+    }
+    gripCtx.fillStyle='#b9bea8';gripCtx.fillRect(59,120,10,5);gripCtx.fillRect(59,380,10,5)
+    const gripMap = new THREE.CanvasTexture(gripCanvas);gripMap.colorSpace=THREE.SRGBColorSpace
+    ;(grip.material as THREE.MeshStandardMaterial).map=gripMap
     this.board.add(grip)
+    this.deckArt.width=128;this.deckArt.height=512
+    this.deckArtMap=new THREE.CanvasTexture(this.deckArt)
+    this.deckArtMap.colorSpace=THREE.SRGBColorSpace
+    const graphic=new THREE.Mesh(new THREE.PlaneGeometry(0.23,0.77),new THREE.MeshStandardMaterial({map:this.deckArtMap,roughness:0.7}))
+    graphic.rotation.x=Math.PI/2;graphic.position.y=-0.043
+    this.board.add(graphic)
     for (const shoe of [this.shoeL, this.shoeR]) {
       const sole = new THREE.Mesh(new RoundedBoxGeometry(0.18, 0.028, 0.31, 2, 0.02), new THREE.MeshStandardMaterial({ color: '#e7e4d9' }))
       sole.position.y = -0.05
@@ -186,6 +213,16 @@ export class Rider {
     const shoes = findCosmetic(SHOES, kit.shoes)
     const hat = findCosmetic(HATS, kit.hat)
 
+    const ctx = this.deckArt.getContext('2d')!
+    ctx.fillStyle=deck.color;ctx.fillRect(0,0,128,512)
+    ctx.fillStyle=deck.secondary ?? '#172327'
+    ctx.fillRect(12,0,13,512);ctx.fillRect(30,0,4,512)
+    for(let i=0;i<7;i++)ctx.fillRect(46,90+i*24,70-i*7,10)
+    ctx.font='bold 65px sans-serif';ctx.fillText('D7',38,405)
+    ctx.font='12px sans-serif';ctx.fillText('DECK7',43,435)
+    this.deckArtMap.needsUpdate=true
+    this.hood.visible=kit.shirt==='rust'
+    for(const sleeve of this.sleeves){sleeve.scale.y=kit.shirt==='rust'?1.8:1;sleeve.position.y=kit.shirt==='rust'?-0.03:0.08}
     ;(this.deckMesh.material as THREE.MeshStandardMaterial).color.set(deck.color)
     ;(this.shirtMesh.material as THREE.MeshStandardMaterial).color.set(shirt.color)
     ;(this.pantsMesh.material as THREE.MeshStandardMaterial).color.set(pants.color)

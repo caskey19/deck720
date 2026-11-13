@@ -1,3 +1,4 @@
+import { lightPark, followSun } from './game/park/atmosphere'
 import * as THREE from 'three'
 import { batchPark } from './game/park/batch'
 import { buildTheYard } from './game/park/TheYard'
@@ -28,24 +29,23 @@ try {
     renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap
     renderer.debug.onShaderError = () => { shaderErrors++; status.textContent = 'Shader error: inspect browser developer console before shipping.' }
-    const scene = new THREE.Scene(); scene.background = new THREE.Color('#cad0c8'); scene.fog = new THREE.Fog('#d6c7b3', 65, 230)
-    scene.add(new THREE.HemisphereLight('#c6def2', '#71624d', 1.65))
-    const sun = new THREE.DirectionalLight('#ffe0b0', 3); sun.position.set(-28, 48, 55); sun.castShadow = true
-    sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -40; sun.shadow.camera.right = 40
-    sun.shadow.camera.top = 100; sun.shadow.camera.bottom = -100; sun.shadow.camera.far = 240
-    sun.shadow.bias = -0.0003; sun.shadow.normalBias = 0.035; sun.target.position.z = 55; scene.add(sun, sun.target)
+    const scene = new THREE.Scene()
+    const ids=['the-yard','forest-line','apex','big-air','channel','the-yard']
+    const sun=lightPark(scene,ids[i])
+    sun.shadow.mapSize.set(1024,1024)
     const camera = new THREE.PerspectiveCamera(55, 1.6, 0.1, 500)
     const rider = new Rider(); rider.applyKit(DEFAULT_KIT)
     if (i < 5) {
       const park = batchPark(builders[i]()); scene.add(park.group)
       const z = i === 0 ? 20 : 10
+      followSun(sun,new THREE.Vector3(0,0,z))
       rider.group.position.set(0, 0.12, z)
       camera.position.set(-3.8, 4.2, z - 8); camera.lookAt(0, 1.3, z + 12)
     } else {
       const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: '#999d91', roughness: 1 }))
       ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground)
       rider.group.position.y = 0.12; camera.position.set(2.6, 1.8, 3); camera.lookAt(0, 0.95, 0)
-      sun.target.position.set(0, 0, 0)
+      followSun(sun,new THREE.Vector3(0,0,0))
     }
     scene.add(rider.group)
     views.push({ renderer, scene, camera, rider })
@@ -64,7 +64,7 @@ try {
       last=time
       for(let i=0;i<views.length;i++){
         const {renderer,scene,camera,rider}=views[i]
-        rider.setPose({crouch:i===5?(Math.sin(time*0.001)+1)*0.35:0.12,boardSpin:0,boardRoll:0,lean:0,armsOut:0})
+        rider.setPose({crouch:i===5?(Math.sin(time*0.001)+1)*0.35:0.12,boardSpin:i===5?Math.max(0,Math.sin(time*0.0007))*Math.PI*2:0,boardRoll:0,lean:0,armsOut:0,airborne:i===5})
         renderer.render(scene,camera)
       }
       if(!shaderErrors)status.textContent = `Rendered ${views.length} views · ${views.map(v=>v.renderer.info.render.calls).join(' / ')} draw calls including shadows · review rendering, contact, kit & sky. This page does not measure gameplay FPS.`

@@ -1,3 +1,4 @@
+import { lightPark, followSun } from './park/atmosphere'
 import { disposeObject } from './park/dispose'
 import { batchPark } from './park/batch'
 import * as THREE from 'three'
@@ -49,6 +50,7 @@ type Screen =
 
 export class Game {
   private ui: HTMLElement
+  private sunLight: THREE.DirectionalLight | null = null
   private renderer: THREE.WebGLRenderer
   private scene = new THREE.Scene()
   private camera = new THREE.PerspectiveCamera(55, 1, 0.1, 300)
@@ -156,6 +158,7 @@ export class Game {
     }
 
     if (this.park) {
+      if (this.sunLight && this.skater) followSun(this.sunLight, this.skater.position)
       this.renderer.render(this.scene, this.camera)
     } else if (this.screen === 'lobby') {
       // Soft idle clear
@@ -182,28 +185,11 @@ export class Game {
     while (this.scene.children.length) this.scene.remove(this.scene.children[0])
     this.park = null
     this.skater = null
+    this.sunLight = null
   }
 
   private setupLights(): void {
-    const hemi = new THREE.HemisphereLight('#c6def2', '#71624d', 1.65)
-    this.scene.add(hemi)
-    const sun = new THREE.DirectionalLight('#ffe0b0', 3.0)
-    sun.position.set(-28, 48, 55)
-    sun.castShadow = true
-    sun.shadow.mapSize.set(2048, 2048)
-    sun.shadow.camera.near = 1
-    sun.shadow.camera.far = 240
-    sun.shadow.camera.left = -40
-    sun.shadow.camera.right = 40
-    sun.shadow.camera.top = 100
-    sun.shadow.camera.bottom = -100
-    sun.shadow.bias = -0.0003
-    sun.shadow.normalBias = 0.035
-    sun.shadow.radius = 3
-    sun.target.position.set(0, 0, 55)
-    this.scene.add(sun.target)
-    this.scene.add(sun)
-    this.scene.add(new THREE.AmbientLight('#ffffff', 0.2))
+    this.sunLight = lightPark(this.scene, this.parkId)
   }
 
   private parkLabelFor(id: ParkId): string {
@@ -236,30 +222,10 @@ export class Game {
     }
   }
 
-  private applyParkAtmosphere(id: ParkId): void {
-    if (id === 'forest-line') {
-      this.scene.background = new THREE.Color('#6f8a78')
-      this.scene.fog = new THREE.Fog('#6f8a78', 45, 150)
-    } else if (id === 'apex') {
-      this.scene.background = new THREE.Color('#7a8fa3')
-      this.scene.fog = new THREE.Fog('#7a8fa3', 48, 155)
-    } else if (id === 'big-air') {
-      this.scene.background = new THREE.Color('#8aa4bc')
-      this.scene.fog = new THREE.Fog('#8aa4bc', 55, 175)
-    } else if (id === 'channel') {
-      this.scene.background = new THREE.Color('#8a9aab')
-      this.scene.fog = new THREE.Fog('#8a9aab', 48, 160)
-    } else {
-      this.scene.background = new THREE.Color('#87a0b8')
-      this.scene.fog = new THREE.Fog('#d6c7b3', 65, 230)
-    }
-  }
-
   private startPark(parkId: ParkId = 'the-yard'): void {
     this.clearWorld()
     this.parkId = parkId
     this.parkLabel = this.parkLabelFor(parkId)
-    this.applyParkAtmosphere(parkId)
     this.setupLights()
     this.park = this.buildPark(parkId)
     this.scene.add(this.park.group)
@@ -334,7 +300,12 @@ export class Game {
       m.castShadow = false
       m.receiveShadow = false
     })
-    oldMaterials.forEach(material => material.dispose())
+    const oldTextures = new Set<THREE.Texture>()
+    for(const material of oldMaterials){
+      for(const value of Object.values(material))if(value instanceof THREE.Texture)oldTextures.add(value)
+      material.dispose()
+    }
+    oldTextures.forEach(texture=>texture.dispose())
     // Ground ring so the ghost reads even at distance
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.55, 0.72, 24),

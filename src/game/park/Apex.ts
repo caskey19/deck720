@@ -1,3 +1,4 @@
+import { parkLook } from './atmosphere'
 import { apexScenery } from './scenicParks'
 import { launchWedge, flatSurface } from './features'
 import { surface, skyDome } from './materials'
@@ -107,16 +108,16 @@ export function buildApex(): ParkData {
     [8, 40],
     [-8, 65],
     [8, 88],
-  ])
+  ], undefined, solids)
   addLamps(group, [
     [-9.5, 22],
     [9.5, 50],
     [-9.5, 78],
-  ])
+  ], solids)
   addBenches(group, [
     [9, 14],
     [-9, 70],
-  ], '#6a7280')
+  ], '#6a7280', solids)
   addFenceRun(group, -11.4, 4, 100, '#3a424a')
   addFenceRun(group, 11.4, 4, 100, '#3a424a')
 
@@ -131,7 +132,7 @@ export function buildApex(): ParkData {
   flatSurface(group,0,98,10,12,0.15)
   apexScenery(group)
 
-  const sky = skyDome('#6a8fae', '#d2dce0')
+  const sky = skyDome(parkLook('apex').sky,parkLook('apex').horizon)
   group.add(sky)
 
   return {

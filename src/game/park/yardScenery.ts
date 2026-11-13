@@ -52,6 +52,27 @@ export function yardScenery(group: THREE.Group): void {
   const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(13, 3.25), new THREE.MeshStandardMaterial({ map, roughness: 0.8, side: THREE.DoubleSide }))
   sign.position.set(-17.4, 5.5, 24); sign.rotation.y = Math.PI / 2; group.add(sign)
+  // Original session bunting breaks the long roofline and frames takeoffs.
+  const wireMaterial=surface('steel','#434e4d')
+  const flagMaterials=['#d9a15b','#648b81','#d7cbb0'].map(color=>new THREE.MeshStandardMaterial({color,side:THREE.DoubleSide,roughness:0.9}))
+  for(const z of [38,102,158]){
+    const cablePoints=[]
+    for(let i=0;i<=16;i++){
+      const x=-17+i*34/16,y=8.5-0.9*Math.sin(i/16*Math.PI)
+      cablePoints.push(new THREE.Vector3(x,y,z))
+    }
+    const cable=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(cablePoints),24,0.018,4,false),wireMaterial)
+    group.add(cable)
+    for(let i=0;i<14;i++){
+      const x=-15+i*2.3,y=8.5-0.9*Math.sin((x+17)/34*Math.PI)
+      const geometry=new THREE.BufferGeometry()
+      geometry.setAttribute('position',new THREE.Float32BufferAttribute([x-0.35,y,z,x+0.35,y,z,x+0.1,y-0.65,z],3))
+      geometry.computeVertexNormals()
+      geometry.setAttribute('uv',new THREE.Float32BufferAttribute([0,1,1,1,0.5,0],2))
+      const flag=new THREE.Mesh(geometry,flagMaterials[i%3])
+      group.add(flag)
+    }
+  }
   // Distant water tower anchors the end of the line.
   const tank = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 5, 16), surface('steel', '#96a09a'))
   tank.position.set(24, 18, 190); tank.castShadow = true; group.add(tank)

@@ -72,3 +72,21 @@ Apex, Big Air and Channel launch blocks were replaced by sampled continuous tran
 Verification now raycasts nine points on every declared pad in all five parks and requires visible top geometry within 12mm. All pass after static batching. All park center lines still finish, idle remains stationary. Current batched mesh / triangle totals: Yard 37 / 11,286; Forest 25 / 11,444; Apex 27 / 5,566; Big Air 25 / 3,824; Channel 43 / 6,700. These are CPU geometry budgets, not measured frame rate.
 
 Instanced mesh GPU resources are disposed explicitly when leaving a park. Build and expanded regression suite pass. Remaining priority is richer board graphics, material detail refinement, course-aware replay metadata and a final cross-system audit. Manual visual review is intentionally deferred per user instruction.
+
+
+## Visual pass 5: Lighting and board detail
+
+Centralized park moods now drive both gameplay and the review page: warm Yard, cooler woodland, clear Apex, golden quarry and dusk Channel. Sun direction stays fixed while its 76m local shadow volume follows the rider. This fixes shadow coverage being left behind during long runs; CPU projection tests check spawn, mid-run and Yard finish.
+
+Deck undersides now have original color-matched D7 graphics. Grip has seeded grain and normalized UVs. Hood is shown only for the hoodie kit, with matching sleeve length. Ghost conversion releases local grip/art maps as well as materials. Playable-area benches, bollards, planters and lamps register collision boxes; scenery beyond ride bounds remains decorative.
+
+Build and regression checks passed. No published server is involved. Offline scene rendering is being explored for geometry/material review; it must be labeled as an approximation, not a Three.js gameplay screenshot.
+
+
+## Offline review and GitHub reconciliation
+
+Rendered all five parks with the actual meshes and canvas texture pixels using a local EGL/Mesa renderer, without a live server. Reviewed the contact sheet for readable rider, terrain, rail and backdrop separation. Approximate offline illumination cannot certify browser rendering or gameplay feel. Source and reproduction instructions are under scripts/offline; labeled contact sheet is in docs/review.
+
+Added original overhead Yard bunting to break up roofline repetition. Yard now batches to 41 meshes and 11,904 triangles. All builds, pad raycasts, center-line finishes, pose checks and moving shadow-volume tests pass.
+
+Remote main advanced independently with user-added Jekyll Pages workflow fe6920f0f0565b09a76db075a5f4e9a1b7a87943. Delivery preserves that exact workflow and builds on the new head rather than overwriting it. Lighting pass commit 3dfdbdb0f37b9409dfe9be9ae654b205314e2e26 was initially saved but its expected-head update was rejected because main had advanced. Its content is included in the reconciled commit.

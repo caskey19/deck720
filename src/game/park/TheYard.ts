@@ -1,3 +1,4 @@
+import { parkLook } from './atmosphere'
 import * as THREE from 'three'
 import { yardScenery } from './yardScenery'
 import { surface, skyDome } from './materials'
@@ -111,10 +112,10 @@ export function buildTheYard(): ParkData {
   pad(0,172,12,12,0.14)
   for(let i=0;i<20;i++)box(-5.7+i*0.6,0.148,170,0.6,0.014,0.5,surface('paint',i%2?'#e9ddc3':'#334a49'))
   for(const x of [-6.4,6.4])box(x,1.5,170,0.15,3,0.15,surface('steel'))
-  addBollards(group,[[-12,15],[12,48],[-12,98],[12,153]])
-  addPlanters(group,[[-11,43],[11,112]])
+  addBollards(group,[[-12,15],[12,48],[-12,98],[12,153]], undefined, solids)
+  addPlanters(group,[[-11,43],[11,112]], solids)
   addFenceRun(group,-13.7,-8,180);addFenceRun(group,13.7,-8,180)
   yardScenery(group)
-  group.add(skyDome())
+  group.add(skyDome(parkLook('the-yard').sky,parkLook('the-yard').horizon))
   return {group,rails,ramps,solids,pads,spawn:new THREE.Vector3(0,0.12,2),spawnYaw:0,finishZ:170,groundY:0,bounds:{minX:-13,maxX:13,minZ:-8,maxZ:182}}
 }
