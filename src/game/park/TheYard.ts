@@ -1,3 +1,4 @@
+import { grindRail } from './features'
 import { parkLook } from './atmosphere'
 import * as THREE from 'three'
 import { yardScenery } from './yardScenery'
@@ -106,12 +107,25 @@ export function buildTheYard(): ParkData {
   pads.push({min:new THREE.Vector3(1.8,0,80.5),max:new THREE.Vector3(8.8,3.2,82)})
   const coping=box(5.3,3.23,80.5,7.1,0.08,0.09,surface('steel'));coping.name='quarter coping'
   rail(-2,77,94,0.55);rail(3,98,109,0.7)
+  // Optional left flow route: a smaller transfer feeds a long low flatbar.
+  kicker(-7.5,75,3.4,0.8,7.2)
+  pad(-7.5,86,4,6,0.32)
+  rail(-8,95,107,0.5)
+  // Diagonal rising bar reconnects the right line with the finish approach.
+  grindRail(group,rails,new THREE.Vector3(7.5,0.56,123),new THREE.Vector3(4.5,0.9,134))
+  for(const [x,z] of [[-7.5,67],[7.8,118]]){
+    box(x,0.008,z,0.12,0.016,1.5,surface('paint','#d8b26e'))
+    for(const side of [-1,1]){
+      const arrow=box(x+side*0.23,0.008,z+0.48,0.1,0.016,0.7,surface('paint','#d8b26e'))
+      arrow.rotation.y=-side*0.65
+    }
+  }
   kicker(-5,134,4.5,0.9,7.8);pad(-5,145,5,6,0.35)
   rail(2,137,152,0.58)
   // Flat finish: banked score flow remains reachable on the center line.
-  pad(0,172,12,12,0.14)
-  for(let i=0;i<20;i++)box(-5.7+i*0.6,0.148,170,0.6,0.014,0.5,surface('paint',i%2?'#e9ddc3':'#334a49'))
-  for(const x of [-6.4,6.4])box(x,1.5,170,0.15,3,0.15,surface('steel'))
+  pad(0,172,26,12,0.14)
+  for(let i=0;i<44;i++)box(-13+(i+0.5)*26/44,0.148,170,26/44,0.014,0.5,surface('paint',i%2?'#e9ddc3':'#334a49'))
+  for(const x of [-13.4,13.4])box(x,1.5,170,0.15,3,0.15,surface('steel'))
   addBollards(group,[[-12,15],[12,48],[-12,98],[12,153]], undefined, solids)
   addPlanters(group,[[-11,43],[11,112]], solids)
   addFenceRun(group,-13.7,-8,180);addFenceRun(group,13.7,-8,180)

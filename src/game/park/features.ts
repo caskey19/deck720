@@ -19,3 +19,20 @@ export function flatSurface(group: THREE.Group,x: number,z: number,width: number
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(width,height,depth),material)
   mesh.position.set(x,height/2,z);mesh.receiveShadow=true;group.add(mesh)
 }
+
+/** Rail geometry and grind contract from the same 3D endpoints. */
+export function grindRail(group: THREE.Group, rails: import('./TheYard').RailSeg[], start: THREE.Vector3, end: THREE.Vector3, radius = 0.45): void {
+  const direction=end.clone().sub(start),length=direction.length()
+  if(length<0.1)throw new Error('A grind rail needs two distinct endpoints')
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,length,10),surface('steel'))
+  beam.position.copy(start).lerp(end,0.5)
+  beam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.normalize())
+  beam.castShadow=true;group.add(beam)
+  const count=Math.max(2,Math.ceil(length/3))
+  for(let i=0;i<count;i++){
+    const point=start.clone().lerp(end,0.08+0.84*i/(count-1))
+    const post=new THREE.Mesh(new THREE.BoxGeometry(0.09,point.y,0.09),surface('steel','#495956'))
+    post.position.set(point.x,point.y/2,point.z);post.castShadow=true;group.add(post)
+  }
+  rails.push({start:start.clone(),end:end.clone(),radius})
+}

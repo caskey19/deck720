@@ -35,7 +35,7 @@ The build and CPU regression suite pass. Tests cover all five center-line finish
 
 | Park | Batched meshes | Triangles including instances |
 | --- | ---: | ---: |
-| The Yard | 41 | 11,904 |
+| The Yard | 42 | 12,472 |
 | Forest Line | 25 | 11,444 |
 | Apex | 27 | 5,566 |
 | Big Air | 25 | 3,824 |
@@ -70,8 +70,19 @@ The Jekyll workflow is not a Vite build workflow. Hosting remains outside this p
 
 ## Remaining limits
 
-The game remains an original low-poly arcade skate game. The world has richer materials and authored settings, but no claim is made that it reaches a finished commercial game's visual quality. Broad course-scale terrain, detailed rider animation blending, hand-to-board grab IK, more route variety and course-aware legacy replay handling remain possible future work. Manual GPU playtesting is still required. The shared Three.js production chunk still produces Vite's size warning, around 626 KB raw / 161 KB gzip.
+The game remains an original low-poly arcade skate game. The world has richer materials and authored settings, but no claim is made that it reaches a finished commercial game's visual quality. Broad course-scale terrain, detailed rider animation blending, richer grab transition blending, more route variety and course-aware legacy replay handling remain possible future work. Manual GPU playtesting is still required. The shared Three.js production chunk still produces Vite's size warning, around 626 KB raw / 161 KB gzip.
 
 ## Preserve
 
 Spawn stays stationary until W is pushed. Keep snappy carve/charge and travel-yaw decoupling in air. No auth, multiplayer rewrite, framework swap or copied assets. No physics tuning is needed without a playtest finding.
+
+
+## Current pass: articulated grabs and optional Yard flow
+
+Rigid arms replaced by fixed-length upper arms and forearms with connected shoulder/elbow/hand anchors. Mute reaches the side of the board, tail grab reaches the tail with a backward torso tuck, and Japan reaches across to the front edge. The other hand balances outward. Sleeve geometry follows the arm; hoodie materials cover the forearm. Visual grab weight eases in and out, and new replay/ghost poses retain the named grab. Old unnamed grab poses use the mute fallback.
+
+Board/feet tuck toward the body during airborne grabs. Landing knees compress briefly and recover. These are rendering poses only; motion, collision, gravity, scores and input bindings are unchanged. CPU tests verify hand-to-board contact within 25mm for all three full poses, fixed arm length, connected elbows, replay grab identity and landing compression.
+
+The Yard now has a left transfer at z=75 feeding a low landing and flatbar at z=95, plus a diagonal rising rail from the right line toward the finish approach. Geometry and grind contract are generated from the same 3D endpoints. Painted arrows show the optional entries. The finish apron and checker line span the full playable width so the side route crosses a visible finish too. A simulated left-line run launches, catches its flatbar and lands; all five center lines remain finishable.
+
+Refreshed offline contact sheet and added docs/review/grabs-strip.png. These remain approximate offline illumination rather than browser gameplay captures. Manual visual/input/performance checks remain pending. Build and full verification suite pass.

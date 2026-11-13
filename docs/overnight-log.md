@@ -30,3 +30,7 @@ Authored Apex spectator setting, Big Air quarry setting and Channel canal street
 ## Locker, sky and replay presentation
 
 Added rotatable 3D locker preview with kit updates, deck inspection, keyboard support and cleanup. Procedural clouds were inspected with actual source sky code in offline EGL rendering; illumination remains approximate. Added replay travel velocity and legacy position-derived travel so air camera yaw uses movement. Updated current handoff/backlog and left hosting deferred. Production build and expanded verification suite pass.
+
+## Continued polish: elbows, grabs and Yard flow
+
+Added connected two-segment arms, named grab contact targets, a tail-grab torso tuck, grab easing, replay/ghost grab identity and visual landing knee compression. Added optional Yard transfer/flatbar flow and a diagonal rail. Build and CPU checks pass, including grip contact, arm lengths, alternate route launch/grind/landing and all center-line finishes. Updated offline review images. No server or deployment work.

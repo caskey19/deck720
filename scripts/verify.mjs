@@ -91,6 +91,48 @@ const footBefore=rider.feet.children[0].getWorldPosition(new THREE.Vector3())
 rider.setPose({crouch:0,boardSpin:Math.PI,boardRoll:0,lean:0,armsOut:0,airborne:true})
 rider.group.updateMatrixWorld(true)
 assert(footBefore.distanceTo(rider.feet.children[0].getWorldPosition(new THREE.Vector3()))<1e-6,'kickflip should not spin feet with deck')
+for(const grab of ['mute','tail','japan']){
+ rider.setPose({crouch:0,boardSpin:0,boardRoll:0,lean:0,armsOut:1,airborne:true,grab})
+ rider.group.updateMatrixWorld(true)
+ const index=grab==='mute'?0:1
+ const hand=rider.group.getObjectByName(`rig hand ${index}`).getWorldPosition(new THREE.Vector3())
+ const local=grab==='tail'?new THREE.Vector3(0.08,-0.015,-0.45):grab==='japan'?new THREE.Vector3(-0.145,0.015,0.26):new THREE.Vector3(-0.145,0.015,0.13)
+ const target=local.applyMatrix4(rider.board.matrixWorld)
+ assert(hand.distanceTo(target)<0.025,`${grab} should reach its board grip, gap=${hand.distanceTo(target)}`)
+ for(let i=0;i<2;i++){
+  const upper=rider.group.getObjectByName(`rig upper arm ${i}`),forearm=rider.group.getObjectByName(`rig forearm ${i}`)
+  const elbowA=new THREE.Vector3(0,0.5,0).applyMatrix4(upper.matrixWorld)
+  const elbowB=new THREE.Vector3(0,-0.5,0).applyMatrix4(forearm.matrixWorld)
+  assert(elbowA.distanceTo(elbowB)<1e-5,'elbow must stay connected')
+  assert(Math.abs(upper.scale.y-0.38)<1e-5&&Math.abs(forearm.scale.y-0.38)<1e-5,'arm segments must retain their length')
+ }
+}
+console.log('Grabs: mute, tail and Japan reach board anchors with connected fixed-length elbows')
+const flowPark=(await import('../.verify/src/game/park/TheYard.ts')).buildTheYard()
+const flowSkater=new SkaterController(flowPark,new Scoring()),flowInput=new Input()
+flowSkater.position.set(-7.5,0.12,64);flowInput.state.forward=true
+let flowAir=false,flowGrind=false,landingBend=false
+for(let i=0;i<360;i++){
+ flowSkater.update(1/60,flowInput,i*1000/60)
+ flowAir ||=flowSkater.phase==='air';flowGrind ||=flowSkater.phase==='grind'
+ landingBend ||=flowSkater.phase==='ground'&&flowSkater.rider.replayPose.crouch>0.1
+}
+assert(flowAir,'left flow route should launch')
+assert(flowGrind,'left flow route should feed the flatbar')
+assert(landingBend,'landing should compress the visual knee pose')
+console.log('Yard alternate flow: transfer launch, flatbar catch and visual landing compression passed')
+const grabSkater=new SkaterController(flowPark,new Scoring()),grabInput=new Input()
+grabSkater.phase='air';grabSkater.position.set(0,20,2);grabSkater.velocity.set(0,0,6);grabInput.state.grabTail=true
+grabSkater.update(1/60,grabInput,0)
+assert(grabSkater.rider.replayPose.armsOut>0&&grabSkater.rider.replayPose.armsOut<1,'grab starts with an eased reach')
+for(let i=1;i<12;i++)grabSkater.update(1/60,grabInput,i*1000/60)
+assert(grabSkater.replayFrames.some(f=>f.pose?.grab==='tail'),'live grab identity must reach recorded frames')
+const heldWeight=grabSkater.rider.replayPose.armsOut
+grabInput.state.grabTail=false;grabSkater.update(1/60,grabInput,200)
+assert(grabSkater.rider.replayPose.armsOut<heldWeight&&grabSkater.rider.replayPose.armsOut>0,'release eases the hand back')
+grabSkater.reset()
+assert.equal(grabSkater.rider.replayPose.armsOut,0,'restart clears visual grab')
+console.log('Live grab input: eased reach/release, named recording and clean restart passed')
 const {lightPark,followSun}=await import('../.verify/src/game/park/atmosphere.ts')
 const lightScene=new THREE.Scene(),sun=lightPark(lightScene,'the-yard')
 const sunDirection=sun.position.clone().sub(sun.target.position).normalize()
@@ -113,6 +155,8 @@ const legacySkater=new SkaterController(replayPark,new Scoring())
 legacySkater.applyReplayFrame({t:100,x:0,y:1,z:10,yaw:2,pitch:0,roll:0,boardSpin:0,state:'air'})
 legacySkater.applyReplayFrame({t:200,x:0.2,y:0.9,z:11.2,yaw:2.5,pitch:0,roll:0,boardSpin:0,state:'air'})
 assert(Math.abs(legacySkater.velocity.z-12)<1e-6,'legacy replay derives travel from frame positions')
+replaySkater.applyReplayFrame({t:300,x:0,y:1,z:12,yaw:0,pitch:0,roll:0,boardSpin:0,state:'air',pose:{crouch:0,lean:0,armsOut:1,push:0,grab:'tail'}})
+assert.equal(replaySkater.rider.replayPose.grab,'tail','replay keeps the actual named grab')
 console.log('Replay camera: recorded velocity and legacy position-derived travel pass')
 console.log('Rig: ankles track shoes, board flips independently, new and legacy replay poses pass')
 const storage=new Map([['deck7.best',JSON.stringify({'the-yard':9999,'apex':200})],['deck7.ghost',JSON.stringify({'the-yard':[{t:0}]})]])

@@ -365,6 +365,7 @@ export class Game {
       armsOut: lerp(a.pose?.armsOut ?? 0, b.pose?.armsOut ?? 0),
       push: lerp(a.pose?.push ?? 0, b.pose?.push ?? 0),
       airborne: a.state === 'air' || b.state === 'air',
+      grab: u<0.5?a.pose?.grab:b.pose?.grab,
     })
   }
 

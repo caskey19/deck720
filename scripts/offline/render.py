@@ -55,6 +55,7 @@ void main(){vec3 color=mix(horizon,top,pow(clamp(uv.y*0.9,0.,1.),0.65));frag=vec
 quad=ctx.vertex_array(sky_program,[(ctx.buffer(np.array([-1,-1,3,-1,-1,3],dtype='f4').tobytes()),'2f','position')])
 def linear(hex):return tuple((int(hex[i:i+2],16)/255)**2.2 for i in (1,3,5))
 frames=[]
+grab_frames=[]
 for file in sorted(src.glob('*.json')):
  data=json.loads(file.read_text());look=data['look']
  color_buffer=ctx.texture((width,height),4);depth=ctx.depth_renderbuffer((width,height));framebuffer=ctx.framebuffer([color_buffer],depth)
@@ -98,7 +99,9 @@ for file in sorted(src.glob('*.json')):
   vao.render(moderngl.TRIANGLES)
  image=Image.frombytes('RGBA',(width,height),framebuffer.read(components=4)).transpose(Image.Transpose.FLIP_TOP_BOTTOM).convert('RGB')
  draw=ImageDraw.Draw(image);draw.rectangle((0,0,750,36),fill='#172627');draw.text((12,10),data['name']+' | OFFLINE GEOMETRY REVIEW | APPROXIMATE LIGHTING',fill='#f2dfb9')
- image.save(out/(data['name']+'.png'));frames.append(image.resize((640,360)))
+ image.save(out/(data['name']+'.png'))
+ if data['name'] in ['RiderMute','RiderTail','RiderJapan']:grab_frames.append(image.resize((640,360)))
+ else:frames.append(image.resize((640,360)))
  for _,a,b,vbo in gpu:a.release();b.release();vbo.release()
  for texture in maps:texture.release()
  white.release();framebuffer.release();color_buffer.release();depth.release();shadow_frame.release();shadow.release()
@@ -107,3 +110,8 @@ sheet=Image.new('RGB',(1280,1080),'#172627')
 for i,frame in enumerate(frames):sheet.paste(frame,((i%2)*640,(i//2)*360))
 if len(frames)<6:ImageDraw.Draw(sheet).text((660,800),'Actual source meshes and textures\nApproximate offline illumination\nNot a browser gameplay capture',fill='#f2dfb9')
 sheet.save(out/'contact-sheet.png')
+
+if grab_frames:
+ strip=Image.new('RGB',(640*len(grab_frames),360),'#172627')
+ for i,frame in enumerate(grab_frames):strip.paste(frame,(640*i,0))
+ strip.save(out/'grabs-strip.png')

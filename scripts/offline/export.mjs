@@ -16,13 +16,13 @@ const {batchPark}=await import(root+'src/game/park/batch.ts')
 const {lightPark,followSun,parkLook}=await import(root+'src/game/park/atmosphere.ts')
 const {Rider}=await import(root+'src/game/rider/Rider.ts')
 const {DEFAULT_KIT}=await import(root+'src/storage/persist.ts')
-const builders=[['TheYard','buildTheYard','the-yard'],['ForestLine','buildForestLine','forest-line'],['Apex','buildApex','apex'],['BigAir','buildBigAir','big-air'],['Channel','buildChannel','channel'],['Rider',null,'the-yard']]
+const builders=[['TheYard','buildTheYard','the-yard'],['ForestLine','buildForestLine','forest-line'],['Apex','buildApex','apex'],['BigAir','buildBigAir','big-air'],['Channel','buildChannel','channel'],['Rider',null,'the-yard'],['RiderMute',null,'the-yard'],['RiderTail',null,'the-yard'],['RiderJapan',null,'the-yard']]
 const outDir=process.argv[2]??'/tmp/deck7-scenes';fs.mkdirSync(outDir,{recursive:true})
 for(const [name,builder,id] of builders){
  const park=builder?batchPark((await import(root+`src/game/park/${name}.ts`))[builder]()):null
  const scene=new THREE.Scene();if(park)scene.add(park.group)
  else {const floor=new THREE.Mesh(new THREE.PlaneGeometry(50,50),new THREE.MeshStandardMaterial({color:'#8e9a8a',roughness:1}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor)}
- const rider=new Rider();rider.applyKit({...DEFAULT_KIT,shirt:'rust',hat:'beanie'});rider.group.position.set(0,0.12,builder?20:0);rider.setPose({crouch:builder?0.12:0.7,lean:0,armsOut:0,boardSpin:0,boardRoll:0});scene.add(rider.group)
+ const rider=new Rider();rider.applyKit({...DEFAULT_KIT,shirt:'rust',hat:'beanie'});rider.group.position.set(0,0.12,builder?20:0);rider.setPose({crouch:builder?0.12:0.7,lean:0,armsOut:name==='Rider'?0:builder?0:1,boardSpin:0,boardRoll:0,airborne:!builder&&name!=='Rider',grab:name==='RiderTail'?'tail':name==='RiderJapan'?'japan':'mute'});scene.add(rider.group)
  const sun=lightPark(scene,id);followSun(sun,rider.group.position);scene.updateMatrixWorld(true);sun.shadow.updateMatrices(sun)
  const camera=new THREE.PerspectiveCamera(55,16/9,0.1,500)
  if(builder){camera.position.set(0,3.37,12.8);camera.lookAt(0,1.17,25.2)}else{camera.position.set(2.5,1.9,3.5);camera.lookAt(0,0.97,0)}

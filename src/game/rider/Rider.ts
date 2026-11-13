@@ -3,13 +3,16 @@ import * as THREE from 'three'
 import { DECKS, HATS, PANTS, SHOES, SHIRTS, findCosmetic } from '../cosmetics'
 import type { KitSelection } from '../../storage/persist'
 
+export type RiderGrab = 'mute' | 'tail' | 'japan'
+
 export class Rider {
   readonly group = new THREE.Group()
   readonly board: THREE.Group
   private deckArt = document.createElement('canvas')
   private deckArtMap: THREE.CanvasTexture
   private hood: THREE.Mesh
-  private sleeves: THREE.Mesh[] = []
+  private skin = new THREE.MeshStandardMaterial({ color: '#c4a07a', roughness: 0.8 })
+  private arms: { upper: THREE.Mesh; forearm: THREE.Mesh; hand: THREE.Mesh; sleeve: THREE.Mesh; shoulder: THREE.Vector3; side: number }[] = []
   private feet = new THREE.Group()
   private body: THREE.Group
   private shirtMesh: THREE.Mesh
@@ -19,10 +22,8 @@ export class Rider {
   private hatMesh: THREE.Mesh
   private deckMesh: THREE.Mesh
   private headMesh: THREE.Mesh
-  private armL: THREE.Mesh
-  private armR: THREE.Mesh
   private legs: { thigh: THREE.Mesh; shin: THREE.Mesh; hip: THREE.Vector3 }[] = []
-  private poseState = { crouch: 0, lean: 0, armsOut: 0, push: 0 }
+  private poseState: { crouch: number; lean: number; armsOut: number; push: number; grab?: RiderGrab } = { crouch: 0, lean: 0, armsOut: 0, push: 0 }
   get replayPose() { return { ...this.poseState } }
   private inverseBody = new THREE.Matrix4()
   private ankle = new THREE.Vector3()
@@ -30,6 +31,11 @@ export class Rider {
   private direction = new THREE.Vector3()
   private bend = new THREE.Vector3()
   private up = new THREE.Vector3(0, 1, 0)
+  private armTarget = new THREE.Vector3()
+  private armRest = new THREE.Vector3()
+  private armElbow = new THREE.Vector3()
+  private armBend = new THREE.Vector3()
+  private sleeveEnd = new THREE.Vector3()
 
   constructor() {
     this.body = new THREE.Group()
@@ -47,14 +53,18 @@ export class Rider {
     this.shirtMesh.position.y = 1.2
     this.shirtMesh.castShadow = true
 
-    // Arms
-    const armMat = new THREE.MeshStandardMaterial({ color: '#c4a07a', roughness: 0.8 })
-    const armGeo = new THREE.CapsuleGeometry(0.075, 0.37, 3, 8)
-    this.armL = new THREE.Mesh(armGeo, armMat)
-    this.armL.position.set(-0.33, 1.15, 0)
-    this.armR = new THREE.Mesh(armGeo, armMat)
-    this.armR.position.set(0.33, 1.15, 0)
-    this.armL.castShadow = this.armR.castShadow = true
+    // Shoulder, elbow and hand anchors share the same pose solver as the legs.
+    for (const side of [-1, 1]) {
+      const index=this.arms.length
+      const upper=new THREE.Mesh(new THREE.CapsuleGeometry(0.065,0.87,3,8),this.skin)
+      const forearm=new THREE.Mesh(new THREE.CapsuleGeometry(0.055,0.89,3,8),this.skin)
+      const hand=new THREE.Mesh(new THREE.SphereGeometry(0.065,8,6),this.skin)
+      const sleeve=new THREE.Mesh(new THREE.CapsuleGeometry(0.09,0.82,3,8),this.shirtMesh.material)
+      upper.name=`rig upper arm ${index}`;forearm.name=`rig forearm ${index}`;hand.name=`rig hand ${index}`
+      hand.scale.set(0.85,1.15,1)
+      this.arms.push({upper,forearm,hand,sleeve,shoulder:new THREE.Vector3(side*0.32,1.4,0),side})
+      this.body.add(upper,forearm,hand,sleeve)
+    }
 
     // Head
     this.headMesh = new THREE.Mesh(
@@ -72,7 +82,7 @@ export class Rider {
     this.hatMesh.position.y = 1.78
     this.hatMesh.visible = false
 
-    this.body.add(this.pantsMesh, this.shirtMesh, this.armL, this.armR, this.headMesh, this.hatMesh)
+    this.body.add(this.pantsMesh, this.shirtMesh, this.headMesh, this.hatMesh)
     for (const [x, z] of [[-0.09, 0.18], [0.09, -0.18]]) {
       const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.78, 3, 8), this.pantsMesh.material)
       const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.095, 0.81, 3, 8), this.pantsMesh.material)
@@ -88,12 +98,6 @@ export class Rider {
     hood.position.set(0, 1.43, -0.11)
     this.shirtMesh.add(hood)
     hood.position.set(0, 0.23, -0.1)
-    for (const x of [-0.27, 0.27]) {
-      const sleeve = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.12, 3, 8), this.shirtMesh.material)
-      sleeve.position.set(x, 0.08, 0)
-      this.shirtMesh.add(sleeve)
-      this.sleeves.push(sleeve)
-    }
     const nose = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), this.headMesh.material)
     nose.position.set(0, 0, 0.145)
     this.headMesh.add(nose)
@@ -228,7 +232,7 @@ export class Rider {
     ctx.font='12px sans-serif';ctx.fillText('DECK7',43,435)
     this.deckArtMap.needsUpdate=true
     this.hood.visible=kit.shirt==='rust'
-    for(const sleeve of this.sleeves){sleeve.scale.y=kit.shirt==='rust'?1.4:1;sleeve.position.y=kit.shirt==='rust'?0.02:0.08;sleeve.position.x=Math.sign(sleeve.position.x)*(kit.shirt==='rust'?0.33:0.27)}
+    for(const arm of this.arms){arm.upper.material=kit.shirt==='rust'?this.shirtMesh.material:this.skin;arm.forearm.material=kit.shirt==='rust'?this.shirtMesh.material:this.skin}
     ;(this.deckMesh.material as THREE.MeshStandardMaterial).color.set(deck.color)
     ;(this.shirtMesh.material as THREE.MeshStandardMaterial).color.set(shirt.color)
     ;(this.pantsMesh.material as THREE.MeshStandardMaterial).color.set(pants.color)
@@ -255,37 +259,66 @@ export class Rider {
     armsOut: number
     push?: number
     airborne?: boolean
+    grab?: RiderGrab | null
   }): void {
-    const crouch = THREE.MathUtils.clamp(opts.crouch, 0, 1)
-    const grab = THREE.MathUtils.clamp(opts.armsOut, 0, 1)
+    const rawCrouch = THREE.MathUtils.clamp(opts.crouch, 0, 1)
+    const grab = opts.airborne === false ? 0 : THREE.MathUtils.clamp(opts.armsOut, 0, 1)
+    const crouch = Math.max(rawCrouch,grab*0.85)
     const push = THREE.MathUtils.clamp(opts.push ?? 0, 0, 1)
-    this.poseState = { crouch, lean: opts.lean, armsOut: grab, push }
+    this.poseState = { crouch: rawCrouch, lean: opts.lean, armsOut: THREE.MathUtils.clamp(opts.armsOut,0,1), push, grab: opts.grab ?? undefined }
     // Back foot traces a short push stroke while the front foot stays planted.
     this.shoeR.position.set(0.035 + push * 0.28, 0.09 - Math.sin(push * Math.PI) * 0.16, -0.25 - push * 0.35)
     // Stronger crouch read while charging pop
-    this.body.position.y = 0.02 - 0.28 * crouch
-    this.body.rotation.x = 0.28 * crouch
+    this.body.position.y = 0.02 - 0.28 * crouch - grab * 0.1
+    this.body.rotation.x = 0.28 * crouch - (opts.grab==='tail'?grab*0.52:0)
     this.body.rotation.z = opts.lean * 0.28
     this.pantsMesh.position.y = 0.87 + 0.12 * crouch
     this.shirtMesh.position.y = 1.2 - 0.12 * crouch
     this.headMesh.position.y = 1.62 - 0.14 * crouch
     this.hatMesh.position.y = 1.78 - 0.14 * crouch
 
+    this.board.position.y = 0.025 + grab*0.28
     this.board.rotation.z = opts.boardSpin
     this.board.rotation.x = opts.boardRoll
     this.feet.rotation.x = opts.boardRoll
-    this.feet.position.y = 0.025 + (opts.airborne ? 0.16 : 0)
+    this.feet.position.y = this.board.position.y + (opts.airborne ? 0.16 : 0)
 
-    // Grab: arms reach down/out toward the board
-    this.armL.rotation.x = -1.15 * grab
-    this.armR.rotation.x = -1.15 * grab
-    this.armL.rotation.z = 0.55 * grab
-    this.armR.rotation.z = -0.55 * grab
-    this.armL.position.y = 1.15 - 0.08 * grab - 0.12 * crouch
-    this.armR.position.y = 1.15 - 0.08 * grab - 0.12 * crouch
-    this.armL.rotation.x -= push * 0.25
-    this.armR.rotation.x += push * 0.2
     this.solveLegs()
+    this.solveArms(grab,opts.grab ?? 'mute',crouch,push)
+  }
+
+  private solveArms(grab: number, kind: RiderGrab, crouch: number, push: number): void {
+    this.board.updateMatrix()
+    const active = kind==='mute' ? 0 : 1
+    for(let i=0;i<this.arms.length;i++){
+      const arm=this.arms[i],shoulder=arm.shoulder
+      shoulder.set(arm.side*0.32,1.4-crouch*0.12,0)
+      // Default bent elbows and a small counter-swing while pushing.
+      this.armRest.set(arm.side*0.42,0.81-crouch*0.12,0.09+push*arm.side*0.16)
+      if(grab>0){
+        if(i===active){
+          if(kind==='tail')this.armTarget.set(0.08,-0.015,-0.45)
+          else if(kind==='japan')this.armTarget.set(-0.145,0.015,0.26)
+          else this.armTarget.set(-0.145,0.015,0.13)
+          this.armTarget.applyMatrix4(this.board.matrix).applyMatrix4(this.inverseBody)
+        } else this.armTarget.set(arm.side*0.68,1.13-crouch*0.1,-0.12)
+        this.armRest.lerp(this.armTarget,grab)
+      }
+      this.direction.subVectors(this.armRest,shoulder)
+      const distance=this.direction.length()
+      // Clamp unreachable targets rather than stretch a limb through the torso.
+      if(distance>0.758)this.armRest.copy(shoulder).addScaledVector(this.direction,0.758/distance)
+      this.direction.subVectors(this.armRest,shoulder).normalize()
+      this.armBend.set(arm.side,0,-0.35)
+      this.armBend.addScaledVector(this.direction,-this.armBend.dot(this.direction)).normalize()
+      const span=shoulder.distanceTo(this.armRest)
+      this.armElbow.copy(shoulder).lerp(this.armRest,0.5).addScaledVector(this.armBend,Math.sqrt(Math.max(0,0.38**2-(span/2)**2)))
+      this.placeLimb(arm.upper,shoulder,this.armElbow)
+      this.placeLimb(arm.forearm,this.armElbow,this.armRest)
+      arm.hand.position.copy(this.armRest)
+      this.sleeveEnd.copy(shoulder).lerp(this.armElbow,0.47)
+      this.placeLimb(arm.sleeve,shoulder,this.sleeveEnd)
+    }
   }
 
   /** Two equal-length segments bend toward the nose and keep ankles at the shoes. */

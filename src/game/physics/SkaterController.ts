@@ -26,6 +26,9 @@ export class SkaterController {
   private grindSpeed = 0
   private bailTimer = 0
   private launchedRamp = false
+  private landingCrouch = 0
+  private grabBlend = 0
+  private visualGrab: GrabKind = null
   private previousReplayFrame: ReplayFrame | null = null
   private frames: ReplayFrame[] = []
   private recordAcc = 0
@@ -66,6 +69,9 @@ export class SkaterController {
     this.bailTimer = 0
     this.launchedRamp = false
     this.finished = false
+    this.landingCrouch = 0
+    this.grabBlend = 0
+    this.visualGrab = null
     this.previousReplayFrame = null
     this.frames = []
     this.recordAcc = 0
@@ -79,6 +85,7 @@ export class SkaterController {
 
   update(dt: number, input: Input, now: number): void {
     input.beginFrame()
+    const phaseBefore = this.phase
 
     if (this.phase === 'bail') {
       this.bailTimer -= dt
@@ -118,6 +125,12 @@ export class SkaterController {
 
     this.clampBounds()
     this.checkFinish()
+    if(phaseBefore==='air' && this.phase==='ground')this.landingCrouch=0.34
+    this.landingCrouch=THREE.MathUtils.damp(this.landingCrouch,0,16,dt)
+    const grab=this.phase==='air'?this.currentGrab(input):null
+    if(grab)this.visualGrab=grab
+    this.grabBlend=THREE.MathUtils.damp(this.grabBlend,grab?1:0,20,dt)
+    if(this.grabBlend<0.001){this.grabBlend=0;this.visualGrab=null}
     this.syncRider(input, now)
     this.record(dt, now)
   }
@@ -615,14 +628,15 @@ export class SkaterController {
       this.phase === 'ground' && this.popCharge > 0.05 ? -this.popCharge * 0.18 : this.pitch
     const drawPitch = this.phase === 'ground' ? chargePitch : this.pitch
     this.rider.group.rotation.set(drawPitch, this.yaw, this.roll)
-    const crouch = this.phase === 'ground' ? this.popCharge : 0
-    const grabOut = input && (input.state.grabMute || input.state.grabTail || input.state.grabJapan) ? 1 : 0
+    const crouch = this.phase === 'ground' ? Math.max(this.popCharge,this.landingCrouch) : 0
+    const grabOut = this.grabBlend
     this.rider.setPose({
       crouch,
       boardSpin: this.boardSpin,
       boardRoll: this.phase === 'grind' ? 0.15 : 0,
       lean: this.phase === 'ground' && input ? Number(input.state.left) - Number(input.state.right) : 0,
       armsOut: grabOut,
+      grab: this.visualGrab,
       airborne: this.phase === 'air',
       push: this.phase === 'ground' && input?.state.forward && this.speed < 18 && crouch < 0.05
         ? Math.max(0, Math.sin(now * 0.009)) : 0,
