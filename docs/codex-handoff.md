@@ -61,3 +61,14 @@ Forest Line now has 96 seeded instanced conifers in three canopy tiers, rock clu
 Rider now uses a two-segment knee rig with ankles solved to shoe anchors during crouch, carve and push. Shoes are separated from the flipping deck and tuck slightly in air. Push animation runs only when pushing on the ground at lower speed. Replay frames optionally capture crouch, lean, grab and push; new playback and ghost interpolation use these while old frames still work.
 
 Build and CPU checks pass, including planted ankle endpoints across crouch/push combinations, independent feet during board flips and new/legacy replay playback. Visual timing and silhouette still require tomorrow's GPU review. No server publication or hosting change requested or performed.
+
+
+## Visual pass 4: Distinct settings and contact reconciliation
+
+Apex has terraced seating, original painted seat bands, an overhead finish frame and timber-ribbed pavilion. Big Air has quarry terraces, rock faces, distant ridgeline and steel overlook decks. Channel has a canal promenade, street facades, awnings, waterside trees and a distant footbridge. Original scenery is kept beyond the playable bounds.
+
+Apex, Big Air and Channel launch blocks were replaced by sampled continuous transition wedges. Phantom elevated ramp pads removed; flat path/apron pads now have exact visible surfaces. Precision ledge bounds tightened, Channel curb tops corrected, and Channel stairs now have individual rideable treads plus an actual landing deck. Tall boundary walls lowered in Apex and Channel so scenery is visible. Four Channel point lights replaced by inexpensive lamp geometry.
+
+Verification now raycasts nine points on every declared pad in all five parks and requires visible top geometry within 12mm. All pass after static batching. All park center lines still finish, idle remains stationary. Current batched mesh / triangle totals: Yard 37 / 11,286; Forest 25 / 11,444; Apex 27 / 5,566; Big Air 25 / 3,824; Channel 43 / 6,700. These are CPU geometry budgets, not measured frame rate.
+
+Instanced mesh GPU resources are disposed explicitly when leaving a park. Build and expanded regression suite pass. Remaining priority is richer board graphics, material detail refinement, course-aware replay metadata and a final cross-system audit. Manual visual review is intentionally deferred per user instruction.

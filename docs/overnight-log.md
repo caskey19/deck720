@@ -22,3 +22,7 @@ Delivered original materials, gradient skies, rounded rider, authored industrial
 ## Continued offline pass
 
 User explicitly authorized continued work without live hosting. Added Forest scenery, aligned Forest pad geometry, articulated knee/ankle rig, push cycle, independent board flips and pose-aware replay/ghosts. npm run build and npm run verify passed.
+
+## Distinct park settings and collision consistency
+
+Authored Apex spectator setting, Big Air quarry setting and Channel canal street. Replaced block launches, aligned landing geometry, made stair treads rideable and raycast-checked nine points per pad. All five simulated runs finish. Build and verification passed.

@@ -35,7 +35,17 @@ for(const [file,builder] of parks){
  park.group.traverse(o=>{if(o.isMesh&&o.geometry.attributes.uv)for(const v of o.geometry.attributes.uv.array)assert(Number.isFinite(v),`${file}: invalid UV`)})
  let meshes=0,triangles=0
  park.group.traverse(o=>{if(o.isMesh){meshes++;const p=o.geometry.attributes.position;for(const v of p.array)assert(Number.isFinite(v),`${file}: nonfinite geometry`);triangles+=(o.geometry.index?o.geometry.index.count:p.count)/3*(o.isInstancedMesh?o.count:1)}})
- for(const p of park.pads??[]) assert(p.min.x<p.max.x&&p.min.z<p.max.z,`${file}: pad bounds`)
+ park.group.updateMatrixWorld(true)
+ const ray=new THREE.Raycaster()
+ for(const p of park.pads??[]) {
+  assert(p.min.x<p.max.x&&p.min.z<p.max.z,`${file}: pad bounds`)
+  for(const u of [0.05,0.5,0.95])for(const v of [0.05,0.5,0.95]) {
+   const x=p.min.x+(p.max.x-p.min.x)*u,z=p.min.z+(p.max.z-p.min.z)*v
+   ray.set(new THREE.Vector3(x,25,z),new THREE.Vector3(0,-1,0))
+   const hits=ray.intersectObject(park.group,true)
+   assert(hits.some(h=>Math.abs(h.point.y-p.max.y)<0.012),`${file}: missing visible pad top y=${p.max.y} at x=${x.toFixed(2)},z=${z.toFixed(2)}`)
+  }
+ }
  for(const r of park.rails) assert(r.start.distanceTo(r.end)>0,`${file}: rail length`)
  const skater=new SkaterController(park,new Scoring()),input=new Input()
  const start=skater.position.clone()

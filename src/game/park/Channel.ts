@@ -1,3 +1,5 @@
+import { channelScenery } from './scenicParks'
+import { launchWedge, flatSurface } from './features'
 import { surface, skyDome } from './materials'
 import * as THREE from 'three'
 import type { LandPad, ParkData, RailSeg, RampZone, SolidBox } from './TheYard'
@@ -30,11 +32,11 @@ export function buildChannel(): ParkData {
   group.add(ground)
 
   for (const x of [-14, 14]) {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 2.1, 125), concrete('#555048'))
-    wall.position.set(x, 0.9, 46)
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.65, 125), concrete('#555048'))
+    wall.position.set(x, 0.175, 46)
     wall.castShadow = true
     group.add(wall)
-    solids.push(solidFromCenter(x, 0.9, 46, 0.55, 2.1, 125))
+    solids.push(solidFromCenter(x, 0.175, 46, 0.55, 0.65, 125))
   }
 
   // Plaza start
@@ -74,19 +76,9 @@ export function buildChannel(): ParkData {
   solids.push(solidFromCenter(-8.5, 0.25, 22, 2.4, 0.35, 0.55))
 
   // Bank-to-bank kicker
-  const bank = new THREE.Mesh(new THREE.BoxGeometry(6, 0.9, 5), concrete('#6f6a60'))
-  bank.position.set(0, 0.35, 42)
-  bank.castShadow = true
-  group.add(bank)
-  solids.push(solidFromCenter(-2.7, 0.45, 42, 0.7, 1.0, 5))
-  solids.push(solidFromCenter(2.7, 0.45, 42, 0.7, 1.0, 5))
-  // Center approach stays clear so the ramp trigger is reachable.
-
-  const lip = new THREE.Mesh(new THREE.BoxGeometry(5, 0.32, 3), concrete('#8d867b'))
-  lip.position.set(0, 0.85, 44.6)
-  lip.rotation.x = -0.36
-  lip.castShadow = true
-  group.add(lip)
+  launchWedge(group,0,39.3,45,6,0.9,'#c0b4a0')
+  solids.push(solidFromCenter(-2.7,0.45,42,0.7,1,5))
+  solids.push(solidFromCenter(2.7,0.45,42,0.7,1,5))
   ramps.push({
     min: new THREE.Vector3(-2.8, 0, 39.1),
     max: new THREE.Vector3(2.8, 2.4, 48),
@@ -121,6 +113,7 @@ export function buildChannel(): ParkData {
     step.position.set(3.5, 0.12 + i * 0.24, stairZ0 + i * 0.75)
     step.receiveShadow = true
     group.add(step)
+    pads.push({min:new THREE.Vector3(1.25,0,stairZ0+i*0.75-0.375),max:new THREE.Vector3(5.75,0.23+i*0.24,stairZ0+i*0.75+0.375)})
   }
   solids.push(solidFromCenter(1.35, 0.85, 80.5, 0.45, 1.6, 5.2))
   solids.push(solidFromCenter(5.65, 0.85, 80.5, 0.45, 1.6, 5.2))
@@ -154,22 +147,21 @@ export function buildChannel(): ParkData {
   finishPad.position.set(0, 0.05, 100)
   finishPad.receiveShadow = true
   group.add(finishPad)
-  pads.push({ min: new THREE.Vector3(-4, 0, -2), max: new THREE.Vector3(4, 0.28, 4) })
+  pads.push({ min: new THREE.Vector3(-4, 0, -4), max: new THREE.Vector3(4, 0.275, 4) })
   // Curb tops
-  pads.push({ min: new THREE.Vector3(-4.8, 0.2, 12.5), max: new THREE.Vector3(-3.6, 0.45, 23.5) })
-  pads.push({ min: new THREE.Vector3(3.9, 0.2, 23.5), max: new THREE.Vector3(5.1, 0.45, 32.5) })
+  pads.push({ min: new THREE.Vector3(-4.7, 0.2, 12.5), max: new THREE.Vector3(-3.7, 0.43, 23.5) })
+  pads.push({ min: new THREE.Vector3(4, 0.2, 23.5), max: new THREE.Vector3(5, 0.43, 32.5) })
   // Plaza floor between curb lines and the bank
   pads.push({ min: new THREE.Vector3(-4, 0, 26), max: new THREE.Vector3(4, 0.16, 38) })
-  pads.push({ min: new THREE.Vector3(-6, 0, 95.5), max: new THREE.Vector3(6, 0.18, 104.5) })
-  // Top of bank (rideable after landing the lip)
-  pads.push({ min: new THREE.Vector3(-3, 0.5, 40), max: new THREE.Vector3(3, 0.8, 44.5) })
+  pads.push({ min: new THREE.Vector3(-6, 0, 95.5), max: new THREE.Vector3(6, 0.175, 104.5) })
   // Soft landing after bank before stairs
   pads.push({ min: new THREE.Vector3(-4, 0, 46), max: new THREE.Vector3(4, 0.18, 58) })
-  // Stair top landing
-  pads.push({
-    min: new THREE.Vector3(1.4, 0.9, stairZ0 + stairSteps * 0.75 - 0.5),
-    max: new THREE.Vector3(5.6, 1.35, stairZ0 + stairSteps * 0.75 + 1.2),
-  })
+  // Full landing deck starts where the last tread ends.
+  const stairTop = 0.23 + (stairSteps-1)*0.24
+  const stairEnd = stairZ0 + (stairSteps-1)*0.75 + 0.375
+  const landing = new THREE.Mesh(new THREE.BoxGeometry(4.5,0.3,2),concrete('#a8aa99'))
+  landing.position.set(3.5,stairTop-0.15,stairEnd+1);landing.receiveShadow=true;group.add(landing)
+  pads.push({min:new THREE.Vector3(1.25,0,stairEnd),max:new THREE.Vector3(5.75,stairTop,stairEnd+2)})
 
   const finish = new THREE.Mesh(
     new THREE.BoxGeometry(10, 0.08, 0.4),
@@ -208,10 +200,14 @@ export function buildChannel(): ParkData {
     )
     pole.position.set(x, 2.7, z)
     group.add(pole)
-    const lamp = new THREE.PointLight('#ffd9a0', 1.8, 26, 2)
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.12,0.35),surface('paint','#e8d7ad'))
     lamp.position.set(x, 5.4, z)
     group.add(lamp)
   }
+
+  flatSurface(group,0,32,8,12,0.16)
+  flatSurface(group,0,52,8,12,0.18)
+  channelScenery(group)
 
   const sky = skyDome('#788ab3', '#e1bca8')
   group.add(sky)

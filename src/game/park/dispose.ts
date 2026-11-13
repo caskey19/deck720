@@ -11,6 +11,7 @@ export function disposeObject(root: THREE.Object3D): void {
         if (!material.userData.sharedSurface) materials.add(material)
       }
     }
+    if (object instanceof THREE.InstancedMesh) object.dispose()
     if (object instanceof THREE.DirectionalLight || object instanceof THREE.SpotLight) object.shadow.dispose()
   })
   geometries.forEach(geometry => geometry.dispose())

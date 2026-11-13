@@ -1,3 +1,5 @@
+import { bigAirScenery } from './scenicParks'
+import { launchWedge, flatSurface } from './features'
 import { surface, skyDome } from './materials'
 import * as THREE from 'three'
 import type { ParkData, RailSeg, RampZone, SolidBox } from './TheYard'
@@ -47,19 +49,9 @@ export function buildBigAir(): ParkData {
   }
 
   // Mega hub
-  const hub = new THREE.Mesh(new THREE.BoxGeometry(10, 1.6, 5), concrete('#5a554d'))
-  hub.position.set(0, 0.7, 46)
-  hub.castShadow = true
-  group.add(hub)
-  solids.push(solidFromCenter(-4.2, 0.7, 46, 1.4, 1.6, 5))
-  solids.push(solidFromCenter(4.2, 0.7, 46, 1.4, 1.6, 5))
-  // Center approach stays clear so the ramp trigger is reachable.
-
-  const launch = new THREE.Mesh(new THREE.BoxGeometry(8, 0.4, 4), concrete('#8d867b'))
-  launch.position.set(0, 1.15, 49.2)
-  launch.rotation.x = -0.48
-  launch.castShadow = true
-  group.add(launch)
+  launchWedge(group,0,43.3,51,10,1.5,'#bfb29a')
+  solids.push(solidFromCenter(-4.2,0.7,46,1.4,1.6,5))
+  solids.push(solidFromCenter(4.2,0.7,46,1.4,1.6,5))
   ramps.push({
     min: new THREE.Vector3(-4.5, 0, 43.1),
     max: new THREE.Vector3(4.5, 3.2, 53),
@@ -112,6 +104,11 @@ export function buildBigAir(): ParkData {
   finish.position.set(0, 0.22, 104)
   group.add(finish)
 
+  flatSurface(group,0,35,10,14,0.2)
+  flatSurface(group,0,91,10,14,0.22)
+  flatSurface(group,0,106,12,12,0.2)
+  bigAirScenery(group)
+
   const sky = skyDome('#688da7', '#e9d0ae')
   group.add(sky)
 
@@ -125,10 +122,9 @@ export function buildBigAir(): ParkData {
     ramps,
     solids,
     pads: [
-      { min: new THREE.Vector3(-4, 0, -2), max: new THREE.Vector3(4, 0.4, 4) },
+      { min: new THREE.Vector3(-4, 0, -4), max: new THREE.Vector3(4, 0.4, 4) },
       // Run-in before mega hub
       { min: new THREE.Vector3(-5, 0, 28), max: new THREE.Vector3(5, 0.2, 42) },
-      { min: new THREE.Vector3(-4, 0.6, 43.5), max: new THREE.Vector3(4, 1.5, 50) },
       // Landing bowl shelf
       { min: new THREE.Vector3(-7, 0.2, 68), max: new THREE.Vector3(7, 0.8, 80) },
       // Transition apron into finish

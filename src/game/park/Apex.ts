@@ -1,3 +1,5 @@
+import { apexScenery } from './scenicParks'
+import { launchWedge, flatSurface } from './features'
 import { surface, skyDome } from './materials'
 import * as THREE from 'three'
 import type { ParkData, RailSeg, RampZone, SolidBox } from './TheYard'
@@ -23,17 +25,17 @@ export function buildApex(): ParkData {
 
   const ground = new THREE.Mesh(
     new THREE.BoxGeometry(24, 0.4, 120),
-    new THREE.MeshStandardMaterial({ color: '#2a2926', roughness: 0.96 }),
+    surface('asphalt','#646b68'),
   )
   ground.position.set(0, -0.2, 45)
   ground.receiveShadow = true
   group.add(ground)
 
   for (const x of [-12.2, 12.2]) {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.1, 120), concrete('#555048'))
-    wall.position.set(x, 0.9, 45)
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 120), concrete('#555048'))
+    wall.position.set(x, 0.15, 45)
     group.add(wall)
-    solids.push(solidFromCenter(x, 0.9, 45, 0.5, 2.1, 120))
+    solids.push(solidFromCenter(x, 0.15, 45, 0.5, 0.6, 120))
   }
 
   const start = new THREE.Mesh(new THREE.BoxGeometry(6, 0.45, 6), concrete('#8a8378'))
@@ -65,18 +67,9 @@ export function buildApex(): ParkData {
   })
 
   // Spine / hub
-  const spine = new THREE.Mesh(new THREE.BoxGeometry(5.5, 1.0, 3.2), concrete('#5c574f'))
-  spine.position.set(0, 0.45, 48)
-  spine.castShadow = true
-  group.add(spine)
-  solids.push(solidFromCenter(-2.2, 0.45, 48, 0.9, 1.0, 3.2))
-  solids.push(solidFromCenter(2.2, 0.45, 48, 0.9, 1.0, 3.2))
-  // Center approach stays clear so the ramp trigger is reachable.
-
-  const lip = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.3, 2.8), concrete('#7d766c'))
-  lip.position.set(0, 0.75, 50.2)
-  lip.rotation.x = -0.4
-  group.add(lip)
+  launchWedge(group,0,46.2,51.5,5.5,1.05,'#bac3b8')
+  solids.push(solidFromCenter(-2.2,0.45,48,0.9,1,3.2))
+  solids.push(solidFromCenter(2.2,0.45,48,0.9,1,3.2))
   ramps.push({
     min: new THREE.Vector3(-2.6, 0, 46.1),
     max: new THREE.Vector3(2.6, 2.5, 53),
@@ -134,6 +127,10 @@ export function buildApex(): ParkData {
   finish.position.set(0, 0.2, 96)
   group.add(finish)
 
+  flatSurface(group,0,63,7,18,0.18)
+  flatSurface(group,0,98,10,12,0.15)
+  apexScenery(group)
+
   const sky = skyDome('#6a8fae', '#d2dce0')
   group.add(sky)
 
@@ -147,16 +144,14 @@ export function buildApex(): ParkData {
     ramps,
     solids,
     pads: [
-      { min: new THREE.Vector3(-3, 0, -2), max: new THREE.Vector3(3, 0.35, 3) },
+      { min: new THREE.Vector3(-3, 0, -3), max: new THREE.Vector3(3, 0.345, 3) },
       // Precision ledge A / B tops
-      { min: new THREE.Vector3(-3.8, 0.2, 13.5), max: new THREE.Vector3(-2.6, 0.5, 22.5) },
-      { min: new THREE.Vector3(2.8, 0.2, 28), max: new THREE.Vector3(4.0, 0.5, 36) },
-      // Spine lip / deck
-      { min: new THREE.Vector3(-2.4, 0.6, 46.5), max: new THREE.Vector3(2.4, 1.05, 52.5) },
+      { min: new THREE.Vector3(-3.65, 0.2, 13.5), max: new THREE.Vector3(-2.75, 0.5, 22.5) },
+      { min: new THREE.Vector3(2.95, 0.2, 28), max: new THREE.Vector3(3.85, 0.5, 36) },
       // Mid plaza between spine and euro
       { min: new THREE.Vector3(-3.5, 0, 54), max: new THREE.Vector3(3.5, 0.18, 72) },
       // Euro ledge top
-      { min: new THREE.Vector3(2.2, 0.3, 81), max: new THREE.Vector3(3.4, 0.55, 87) },
+      { min: new THREE.Vector3(2.3, 0.3, 80.5), max: new THREE.Vector3(3.3, 0.53, 87.5) },
       // Finish apron
       { min: new THREE.Vector3(-5, 0, 92), max: new THREE.Vector3(5, 0.15, 104) },
     ],
