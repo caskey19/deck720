@@ -1,3 +1,4 @@
+import { DEFAULT_CAMERA, loadCamera, saveCamera, followYaw, type CameraSettings } from './camera/settings'
 import { KitPreview } from './rider/KitPreview'
 import { lightPark, followSun } from './park/atmosphere'
 import { disposeObject } from './park/dispose'
@@ -55,7 +56,7 @@ export class Game {
   private sunLight: THREE.DirectionalLight | null = null
   private renderer: THREE.WebGLRenderer
   private scene = new THREE.Scene()
-  private camera = new THREE.PerspectiveCamera(55, 1, 0.1, 300)
+  private camera = new THREE.PerspectiveCamera(58, 1, 0.1, 300)
   private input = new Input()
   private clock = new THREE.Clock()
   private park: ParkData | null = null
@@ -73,10 +74,15 @@ export class Game {
   private anim = 0
   private toastTimer = 0
   /** Smoothed chase yaw — decoupled from board spin in air */
+  private cameraSettings: CameraSettings = loadCamera()
+  private cameraLook = new THREE.Vector3()
+  private lookAroundYaw = 0
+  private lookAroundPitch = 0
+  private cameraEvents = new AbortController()
+  private rightLook = false
   private cameraYaw = 0
   private cameraYawReady = false
-  private cameraFov = 55
-  private cameraShake = 0
+  private cameraFov = 58
   private parkId: ParkId = 'the-yard'
   private parkLabel = 'The Yard'
   private sfx = new Sfx()
@@ -95,7 +101,7 @@ export class Game {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.shadowMap.enabled = true
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    this.renderer.shadowMap.type = THREE.PCFShadowMap
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.15
@@ -104,6 +110,16 @@ export class Game {
 
     window.addEventListener('resize', this.onResize)
     this.onResize()
+    canvas.addEventListener('contextmenu',e=>e.preventDefault(),{signal:this.cameraEvents.signal})
+    canvas.addEventListener('pointerdown',e=>{if(e.button===2 && this.screen==='riding'){this.rightLook=true;canvas.setPointerCapture(e.pointerId)}},{signal:this.cameraEvents.signal})
+    canvas.addEventListener('pointermove',e=>{
+      if(!this.rightLook)return
+      this.lookAroundYaw=THREE.MathUtils.clamp(this.lookAroundYaw-e.movementX*0.003*this.cameraSettings.sensitivity,-0.85,0.85)
+      this.lookAroundPitch=THREE.MathUtils.clamp(this.lookAroundPitch+e.movementY*0.002*this.cameraSettings.sensitivity,-0.3,0.3)
+    },{signal:this.cameraEvents.signal})
+    const releaseLook=()=>{this.rightLook=false}
+    canvas.addEventListener('pointerup',releaseLook,{signal:this.cameraEvents.signal});canvas.addEventListener('pointercancel',releaseLook,{signal:this.cameraEvents.signal})
+    window.addEventListener('blur',releaseLook,{signal:this.cameraEvents.signal})
     this.showLobby()
     this.anim = requestAnimationFrame(this.frame)
   }
@@ -112,6 +128,7 @@ export class Game {
     cancelAnimationFrame(this.anim)
     window.removeEventListener('resize', this.onResize)
     this.clearWorld()
+    this.cameraEvents.abort()
     this.input.dispose()
     this.renderer.dispose()
   }
@@ -154,6 +171,7 @@ export class Game {
     } else if (this.screen === 'locker') {
       this.kitPreview?.render(dt)
     } else if (this.screen === 'paused') {
+      this.updateChaseCamera(dt)
       if (this.input.consumePause()) {
         this.screen = 'riding'
         this.ensureHud(true)
@@ -254,6 +272,8 @@ export class Game {
     this.runStartMs = performance.now()
     this.lastLineCountHud = 0
     this.cameraYawReady = false
+    this.lookAroundYaw = this.lookAroundPitch = 0
+    this.rightLook = false
     this.input.clear()
     this.input.enabled = true
     this.screen = 'riding'
@@ -377,6 +397,8 @@ export class Game {
     this.runStartMs = performance.now()
     this.lastLineCountHud = 0
     this.cameraYawReady = false
+    this.lookAroundYaw = this.lookAroundPitch = 0
+    this.rightLook = false
     this.input.clear()
     this.screen = 'riding'
     this.ensureHud(true)
@@ -424,42 +446,23 @@ export class Game {
       }
     }
 
-    if (!this.cameraYawReady) {
-      this.cameraYaw = targetYaw
-      this.cameraYawReady = true
-    } else {
-      let dy = targetYaw - this.cameraYaw
-      while (dy > Math.PI) dy -= Math.PI * 2
-      while (dy < -Math.PI) dy += Math.PI * 2
-      // Ground catches up snappy; air eases slowly toward travel path only
-      const follow = phase === 'air' ? 0.012 : phase === 'grind' ? 0.04 : 0.00025
-      this.cameraYaw += dy * (1 - Math.pow(follow, dt))
+    const fresh = !this.cameraYawReady
+    if(fresh){this.cameraYaw=targetYaw;this.cameraYawReady=true}
+    else this.cameraYaw=followYaw(this.cameraYaw,targetYaw,dt,phase==='air'||phase==='grind')
+    if(!this.rightLook){
+      this.lookAroundYaw=THREE.MathUtils.damp(this.lookAroundYaw,0,2.5,dt)
+      this.lookAroundPitch=THREE.MathUtils.damp(this.lookAroundPitch,0,2.5,dt)
     }
-
-    const airLift = phase === 'air' || phase === 'grind' ? 0.55 : 0
-    const yaw = this.cameraYaw
-    const dist = 7.2 + THREE.MathUtils.clamp(spd / 28, 0, 1.1) + (phase === 'air' ? 0.35 : 0)
-    const behind = new THREE.Vector3(-Math.sin(yaw) * dist, 3.25 + airLift + spd * 0.02, -Math.cos(yaw) * dist)
-    const desired = p.clone().add(behind)
-    this.camera.position.lerp(desired, 1 - Math.pow(0.00035, dt))
-    const look = p.clone().add(new THREE.Vector3(Math.sin(yaw) * 5.2, 1.05, Math.cos(yaw) * 5.2))
-    this.camera.lookAt(look)
-
-    // Subtle FOV punch with speed / air — keep chase readable
-    const targetFov = 55 + THREE.MathUtils.clamp(spd * 0.22, 0, 6) + (phase === 'air' ? 2.5 : 0)
-    this.cameraFov = THREE.MathUtils.lerp(this.cameraFov, targetFov, 1 - Math.pow(0.01, dt))
-    if (Math.abs(this.camera.fov - this.cameraFov) > 0.05) {
-      this.camera.fov = this.cameraFov
-      this.camera.updateProjectionMatrix()
-    }
-
-    if (phase === 'bail' && this.cameraShake < 0.35) this.cameraShake = 0.55
-    if (this.cameraShake > 0) {
-      this.cameraShake = Math.max(0, this.cameraShake - dt * 1.8)
-      const mag = this.cameraShake * 0.18
-      this.camera.position.x += (Math.random() - 0.5) * mag
-      this.camera.position.y += (Math.random() - 0.5) * mag * 0.6
-    }
+    const settings=this.cameraSettings
+    const yaw=this.cameraYaw+THREE.MathUtils.degToRad(settings.angle)+this.lookAroundYaw
+    const desired = p.clone().add(new THREE.Vector3(-Math.sin(yaw)*settings.distance,settings.height+this.lookAroundPitch*2,-Math.cos(yaw)*settings.distance))
+    const look=p.clone().add(new THREE.Vector3(Math.sin(this.cameraYaw)*1.8,1.05,Math.cos(this.cameraYaw)*1.8))
+    if(fresh){this.camera.position.copy(desired);this.cameraLook.copy(look)}
+    else {this.camera.position.lerp(desired,1-Math.exp(-4.5*dt));this.cameraLook.lerp(look,1-Math.exp(-3.5*dt))}
+    this.camera.lookAt(this.cameraLook)
+    const targetFov=settings.fov+(settings.speedFov?THREE.MathUtils.clamp(spd*0.18,0,2):0)
+    this.cameraFov=fresh?targetFov:THREE.MathUtils.damp(this.cameraFov,targetFov,2,dt)
+    if(Math.abs(this.camera.fov-this.cameraFov)>0.02){this.camera.fov=this.cameraFov;this.camera.updateProjectionMatrix()}
   }
 
   private updateReplay(dt: number): void {
@@ -738,7 +741,7 @@ export class Game {
             }),
             el('li', { text: 'Hold W to push, A/D to carve, S to brake.' }),
             el('li', { text: 'Hold Space to load an ollie, release to pop. Hubs and quarters can also launch you.' }),
-            el('li', { text: 'In the air: A/D spin, W/S flip. Hold Space while spinning for board flips (kickflip / heelflip).' }),
+            el('li', { text: 'In the air: A/D spin, arrow keys lean (body flips on ramps only). Hold Space while spinning for board flips (kickflip / heelflip).' }),
             el('li', { text: 'Shift mute · Q tail · E Japan. Release before you land.' }),
             el('li', {
               text: 'Approach rails lined up with your board (not sideways). A/D swaps. Space pops off and keeps speed.',
@@ -766,8 +769,9 @@ export class Game {
             el('tr', {}, [el('th', { text: 'Input' }), el('th', { text: 'Action' })]),
           ]),
           el('tbody', {}, [
-            this.ctrl('W / S', 'Push · brake · flip in air'),
+            this.ctrl('W / S', 'Push · brake'),
             this.ctrl('A / D', 'Carve · spin · grind swap'),
+            this.ctrl('Arrow Up / Down', 'Air lean · ramp body rotation'),
             this.ctrl('Space', 'Load / pop · hold in air for board flip'),
             this.ctrl('Shift', 'Mute grab'),
             this.ctrl('Q / E', 'Tail / Japan grab'),
@@ -906,7 +910,7 @@ export class Game {
             el('span', { className: 'pop-label', text: 'POP' }),
             el('div', { className: 'pop-track' }, [el('div', { className: 'pop-fill', id: 'hud-pop' })]),
           ]),
-          el('div', { className: 'hint-chip', text: 'Space pop · WASD air · Shift/Q/E grab · Hold R restart · Esc pause' }),
+          el('div', { className: 'hint-chip', text: 'Space ollie · A/D spin · Arrows lean · Shift/Q/E grab · Esc camera / pause' }),
           el('div', { className: 'restart-meter hidden', id: 'hud-restart' }, [
             el('span', { text: 'RESTART' }),
             el('div', { className: 'restart-track' }, [el('div', { className: 'restart-fill', id: 'hud-restart-fill' })]),
@@ -954,7 +958,6 @@ export class Game {
     if (s.lineCount > this.lastLineCountHud && s.lineCount >= 2) {
       this.toast(`Line x${s.lineCount}`)
       this.sfx.score()
-      this.cameraFov = Math.min(66, this.cameraFov + 1.8)
     }
     this.lastLineCountHud = s.lineCount
 
@@ -1003,7 +1006,6 @@ export class Game {
           if (key !== this.lastLandPunchKey) {
             this.lastLandPunchKey = key
             if (s.banner.includes('Perfect')) {
-              this.cameraFov = Math.min(68, this.cameraFov + 4.5)
               this.toast('Perfect')
               this.sfx.perfect()
             } else if (s.banner.includes('Sketchy')) {
@@ -1061,6 +1063,31 @@ export class Game {
       }
       if (!bailing) bail.classList.add('hidden')
     }
+  }
+
+  private cameraControls(): HTMLElement {
+    const panel=el('section',{className:'camera-options'})
+    panel.append(el('h2',{text:'Third-person camera'}),el('p',{className:'muted',text:'Hold the right mouse button to look around. Release to return gently.'}))
+    const controls: {key: 'height'|'distance'|'angle'|'fov'|'sensitivity';label:string;min:number;max:number;step:number;unit:string}[]=[
+      {key:'height',label:'Height',min:0.8,max:3,step:0.1,unit:'m'},
+      {key:'distance',label:'Distance',min:2.8,max:8,step:0.1,unit:'m'},
+      {key:'angle',label:'Angle',min:-25,max:25,step:1,unit:'°'},
+      {key:'fov',label:'Field of view',min:45,max:80,step:1,unit:'°'},
+      {key:'sensitivity',label:'Look sensitivity',min:0.1,max:1,step:0.05,unit:''},
+    ]
+    for(const control of controls){
+      const label=el('label',{className:'camera-option'})
+      const slider=document.createElement('input');slider.type='range';slider.min=String(control.min);slider.max=String(control.max);slider.step=String(control.step);slider.value=String(this.cameraSettings[control.key])
+      const output=el('output',{text:`${slider.value}${control.unit}`})
+      slider.addEventListener('input',()=>{this.cameraSettings[control.key]=Number(slider.value);output.textContent=`${slider.value}${control.unit}`;saveCamera(this.cameraSettings);this.updateChaseCamera(0.016)})
+      label.append(el('span',{text:control.label}),slider,output);panel.append(label)
+    }
+    const speed=el('button',{className:'btn',text:this.cameraSettings.speedFov?'Speed FOV: on':'Speed FOV: off'})
+    speed.addEventListener('click',()=>{this.cameraSettings.speedFov=!this.cameraSettings.speedFov;saveCamera(this.cameraSettings);speed.textContent=this.cameraSettings.speedFov?'Speed FOV: on':'Speed FOV: off'})
+    const reset=el('button',{className:'btn',text:'Reset camera'})
+    reset.addEventListener('click',()=>{this.cameraSettings={...DEFAULT_CAMERA};saveCamera(this.cameraSettings);this.renderPause()})
+    panel.append(el('div',{className:'action-row'},[speed,reset]))
+    return panel
   }
 
   private renderPause(): void {
@@ -1128,6 +1155,7 @@ export class Game {
       el('div', { className: 'screen overlay-screen' }, [
         el('div', { className: 'sheet panel' }, [
           el('header', {}, [el('h1', { text: 'Paused' })]),
+          this.cameraControls(),
           el('div', { className: 'action-row' }, [
             resume,
             restart,

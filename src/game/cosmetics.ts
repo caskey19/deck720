@@ -15,6 +15,7 @@ export const DECKS: CosmeticOption[] = [
 ]
 
 export const SHIRTS: CosmeticOption[] = [
+  { id: 'navy', label: 'Navy Zip Jacket', color: '#293d53' },
   { id: 'ink', label: 'Ink Tee', color: '#1d1a17' },
   { id: 'bone', label: 'Bone Tee', color: '#e8e0d4' },
   { id: 'rust', label: 'Rust Hoodie', color: '#8b3a1f' },
@@ -37,6 +38,7 @@ export const SHOES: CosmeticOption[] = [
 ]
 
 export const HATS: CosmeticOption[] = [
+  { id: 'helmet', label: 'Matte Helmet', color: '#24292f' },
   { id: 'none', label: 'No Hat', color: 'transparent' },
   { id: 'beanie', label: 'Beanie', color: '#2a2a2a' },
   { id: 'cap', label: 'Cap', color: '#e8a838' },

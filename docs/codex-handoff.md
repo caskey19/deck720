@@ -86,3 +86,14 @@ Board/feet tuck toward the body during airborne grabs. Landing knees compress br
 The Yard now has a left transfer at z=75 feeding a low landing and flatbar at z=95, plus a diagonal rising rail from the right line toward the finish approach. Geometry and grind contract are generated from the same 3D endpoints. Painted arrows show the optional entries. The finish apron and checker line span the full playable width so the side route crosses a visible finish too. A simulated left-line run launches, catches its flatbar and lands; all five center lines remain finishable.
 
 Refreshed offline contact sheet and added docs/review/grabs-strip.png. These remain approximate offline illumination rather than browser gameplay captures. Manual visual/input/performance checks remain pending. Build and full verification suite pass.
+
+
+## User-directed realism and rider reference pass
+
+Rebuilt torso as a rounded tailored lathe volume and widened articulated denim legs. Added original fabric weave, zip/pocket seams, layered grey hood, full sleeves, laced shoes, oval simplified face and a matte helmet with chin strap. Default kit is navy jacket / washed denim / black shoes / helmet. All prior cosmetic IDs remain available; saved custom kits are preserved. This uses the supplied image for generic silhouette and clothing direction only, with no reference branding.
+
+Flat-ground launch speed is now 2.2–3.5m/s with gravity 9.81m/s². Simulated tap apex is 0.28m, full-charge apex 0.60m and full airtime 0.70s. Pop no longer injects forward speed. Ordinary ground air limits body pitch to a small lean; full body rotations are restricted to ramp takeoffs. W/S push/brake are separated from Arrow Up/Down air lean. Ground max speed is 8.5m/s and carving is much calmer. Ramp launch boosts are capped; rails now scrub momentum rather than accelerate, and upside-down deck landings bail.
+
+Camera defaults follow the user's reference: 1.3m height, 4.3m distance, 0-degree angle, 58-degree base FOV, mild speed FOV. Automatic yaw is damped and rate-limited; landing/score FOV punches and shake are removed. Right mouse look uses low sensitivity and returns gently. Esc includes saved height/distance/angle/FOV/sensitivity sliders, speed-FOV toggle and reset. Paused camera updates let the sliders preview their effect.
+
+Build and all five finish simulations pass. Added checks for tap/full jump height, frame-rate consistency, no flat-ground body flip, no W-triggered frontflip, calm camera yaw, angle wrapping and reference defaults. Physical simulation is still simplified arcade skating, not a full rigid-body model. Cloud preview lacks GPU; actual browser rendering is checked on the user's GPU browser after deployment. No first-person mode was added in this pass.

@@ -18,7 +18,7 @@ Open **http://127.0.0.1:3847/** (Vite binds port `3847`).
 1. **Solo** is selected in Basecamp — press **RIDE** / Enter.
 2. Pick a park: **The Yard**, **Forest Line**, **Apex**, **Big Air**, or **Channel**.
 3. **W** push · **S** brake · **A/D** carve · **Space** ollie (hold to load, release to pop). Stay still until you push — no auto-roll.
-4. In the air: **A/D** spin · **W/S** flip · hold **Space** while spinning for board flips · **Shift** mute · **Q** tail · **E** Japan.
+4. In the air: **A/D** spin · **Arrow Up/Down** lean (body rotations on ramp launches only) · hold **Space** while spinning for board flips · **Shift** mute · **Q** tail · **E** Japan.
 5. Approach rails lined up to grind; **A/D** swaps; **Space** pops off.
 6. Cross the finish for the score breakdown. Hold **R** for 2s to restart. **Esc** pauses (SFX, music, ghost toggle, clear PB).
 7. Beat a park’s personal best to unlock a **cyan PB ghost** — race it next run (ahead/behind HUD). Mobile: on-screen pads including grabs.
@@ -52,3 +52,12 @@ Use Node 24 or newer. Run `npm run verify` for CPU geometry, controller, cosmeti
 The redesigned Yard uses a new PB/ghost course version; old records remain stored. Manual GPU playtesting of this pass is still required. See `docs/codex-handoff.md` for validation limits and remaining art work.
 
 Offline source-geometry review: see [the labeled contact sheet](docs/review/README.md). These images use approximate illumination and are not browser gameplay captures.
+
+
+## Grounded physics and camera
+
+Flat-ground ollies now rise about 0.28m on a tap and 0.60m at full charge. W pushes without triggering aerial body flips. Air lean is on arrow keys; flat-ground full-body flips are blocked. Ramps provide additional airtime. Ground speed and carve response are lower and calmer.
+
+The chase camera defaults to height 1.3m, distance 4.3m, angle 0 degrees and 58-degree FOV. Esc opens camera sliders, speed-FOV toggle and reset. Hold right mouse to look around at low sensitivity. Automatic camera yaw is damped and rate-limited; trick spins do not drive it.
+
+The default kit is an original navy zip jacket with grey hood, loose washed jeans, vulcanized shoes and a matte helmet. Existing cosmetic choices remain available.

@@ -34,3 +34,7 @@ Added rotatable 3D locker preview with kit updates, deck inspection, keyboard su
 ## Continued polish: elbows, grabs and Yard flow
 
 Added connected two-segment arms, named grab contact targets, a tail-grab torso tuck, grab easing, replay/ghost grab identity and visual landing knee compression. Added optional Yard transfer/flatbar flow and a diagonal rail. Build and CPU checks pass, including grip contact, arm lengths, alternate route launch/grind/landing and all center-line finishes. Updated offline review images. No server or deployment work.
+
+## User feedback: grounded jumps, calmer camera, dressed rider
+
+Lowered ordinary ollies to 0.28–0.60m, separated pushing from flipping, reduced speed/carve, reduced ramp boosts and rail acceleration, and required upright deck landings. Added saved camera controls using 1.3m/4.3m/58deg defaults and low-sensitivity right-mouse look. Rebuilt default rider with original navy jacket/grey hood, denim weave, loose legs, helmet/strap and laced shoes. Build and expanded checks pass.

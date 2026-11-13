@@ -32,7 +32,7 @@ export class KitPreview {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.15
     this.renderer.shadowMap.enabled = true
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    this.renderer.shadowMap.type = THREE.PCFShadowMap
     const sun = lightPark(this.scene,'the-yard')
     sun.shadow.mapSize.set(512,512)
     sun.shadow.camera.left = sun.shadow.camera.bottom = -3

@@ -26,6 +26,7 @@ export class SkaterController {
   private grindSpeed = 0
   private bailTimer = 0
   private launchedRamp = false
+  private rampAir = false
   private landingCrouch = 0
   private grabBlend = 0
   private visualGrab: GrabKind = null
@@ -68,6 +69,7 @@ export class SkaterController {
     this.grindSpeed = 0
     this.bailTimer = 0
     this.launchedRamp = false
+    this.rampAir = false
     this.finished = false
     this.landingCrouch = 0
     this.grabBlend = 0
@@ -89,7 +91,7 @@ export class SkaterController {
 
     if (this.phase === 'bail') {
       this.bailTimer -= dt
-      this.velocity.y -= 18 * dt
+      this.velocity.y -= 9.81 * dt
       this.position.addScaledVector(this.velocity, dt)
       if (this.position.y < this.park.groundY) {
         this.position.y = this.park.groundY
@@ -138,16 +140,16 @@ export class SkaterController {
   private updateGround(dt: number, input: Input, now: number): void {
     // A = turn left, D = turn right (screen-space from chase cam)
     const steerInput = Number(input.state.left) - Number(input.state.right)
-    const steer = steerInput * 3.35
+    const steer = steerInput * 1.15
     // Push only while holding W — no idle auto-roll
-    const push = input.state.forward ? 36 : 0
+    const push = input.state.forward ? 5.5 : 0
     const brake = input.state.back ? 26 : 1.4
 
     const speedNow = Math.hypot(this.velocity.x, this.velocity.z)
-    // Cork7-snappy carve: stays responsive at low speed, tightens a bit when fast
-    this.yaw += steer * dt * THREE.MathUtils.clamp(1.22 + speedNow / 13, 1.1, 2.45)
+    // Lower, speed-dependent carve rate keeps turns controllable.
+    this.yaw += steer * dt * THREE.MathUtils.clamp(0.35 + speedNow / 8, 0.35, 1.15)
     // Visual carve lean — a touch deeper so turns read on camera
-    this.roll = THREE.MathUtils.lerp(this.roll, steerInput * 0.26, 1 - Math.pow(0.0008, dt))
+    this.roll = THREE.MathUtils.lerp(this.roll, steerInput * 0.14, 1 - Math.pow(0.0008, dt))
 
     const forward = this.tmp.set(Math.sin(this.yaw), 0, Math.cos(this.yaw))
     this.velocity.x += forward.x * push * dt
@@ -173,7 +175,7 @@ export class SkaterController {
 
     // Cap speed
     let xz = Math.hypot(this.velocity.x, this.velocity.z)
-    const maxSpeed = input.state.forward ? 24 : 15
+    const maxSpeed = 8.5
     if (xz > maxSpeed) {
       this.velocity.x = (this.velocity.x / xz) * maxSpeed
       this.velocity.z = (this.velocity.z / xz) * maxSpeed
@@ -194,6 +196,7 @@ export class SkaterController {
     // Walked off a pad/ledge — drop into air instead of teleporting down
     if (this.position.y - desiredY > 0.55) {
       this.phase = 'air'
+      this.rampAir = false
       this.scoring.beginAir()
       this.velocity.y = 0
       this.resolveSolids()
@@ -233,21 +236,20 @@ export class SkaterController {
       this.whooshAcc = 0
     }
 
-    // Pop charge — tap = small ollie, hold = corkier pop (ease-in curve)
+    // Pop charge: tap is a small ollie; hold adds a modest higher tuck.
     if (input.state.pop) {
       if (this.popCharge <= 0) this.popCharge = 0.22
       this.popCharge = Math.min(1, this.popCharge + dt * 2.9)
     }
 
     if (input.consumePopRelease()) {
-      // Tap ≈ small ollie; hold eases into a corkier pop (smoothstep)
+      // Tap is a small hop; full charge remains an ordinary ground ollie.
       const charge = THREE.MathUtils.clamp(this.popCharge, 0.18, 1)
       const eased = charge * charge * (3 - 2 * charge)
-      const boost = 4.6 + eased * 9.4
+      const boost = 2.2 + eased * 1.3
       this.velocity.y = boost
-      this.velocity.x += forward.x * (1.4 + eased * 3.6)
-      this.velocity.z += forward.z * (1.4 + eased * 3.6)
       this.phase = 'air'
+      this.rampAir = false
       this.scoring.beginAir()
       this.popCharge = 0
       this.launchedRamp = false
@@ -259,10 +261,11 @@ export class SkaterController {
     if (!this.launchedRamp) {
       for (const ramp of this.park.ramps) {
         if (this.inBox(this.position, ramp.min, ramp.max) && xz > 3.2) {
-          const lipPop = 1 + this.popCharge * 0.45
-          this.velocity.y = ramp.launchUp * 1.12 * lipPop
-          this.velocity.addScaledVector(ramp.launchDir, ramp.launchSpeed * 1.12)
+          const lipPop = 1 + this.popCharge * 0.08
+          this.velocity.y = Math.min(8.4, ramp.launchUp * 0.75) * lipPop
+          this.velocity.addScaledVector(ramp.launchDir, ramp.launchSpeed * 0.18)
           this.phase = 'air'
+          this.rampAir = true
           this.scoring.beginAir()
           this.launchedRamp = true
           this.popCharge = 0
@@ -288,24 +291,25 @@ export class SkaterController {
 
   private updateAir(dt: number, input: Input, now: number): void {
     // Arcade hangtime — readable spins without ballooning big airs
-    const gravity = 16.1
+    const gravity = 9.81
     this.velocity.y -= gravity * dt
     this.position.addScaledVector(this.velocity, dt)
     this.resolveSolids()
 
     // Air control — snappy spins so 180/360 lines read sooner
-    const spinRate = (Number(input.state.airLeft) - Number(input.state.airRight)) * 475
-    const flipRate = (Number(input.state.airDown) - Number(input.state.airUp)) * 395
+    const spinRate = (Number(input.state.airLeft) - Number(input.state.airRight)) * 270
+    const flipRate = (Number(input.state.airDown) - Number(input.state.airUp)) * (this.rampAir ? 210 : 0)
     let boardSpinRate = 0
-    if (input.state.pop) boardSpinRate = (Number(input.state.airLeft) - Number(input.state.airRight)) * 590
-    else boardSpinRate = (Number(input.state.airLeft) - Number(input.state.airRight)) * 70
+    if (input.state.pop) boardSpinRate = (Number(input.state.airLeft) - Number(input.state.airRight)) * 650
+    else boardSpinRate = 0
 
     this.yaw += THREE.MathUtils.degToRad(spinRate) * dt
-    this.pitch += THREE.MathUtils.degToRad(flipRate) * dt
+    if(this.rampAir) this.pitch += THREE.MathUtils.degToRad(flipRate) * dt
+    else this.pitch = THREE.MathUtils.damp(this.pitch,(Number(input.state.airDown)-Number(input.state.airUp))*0.2,8,dt)
     this.boardSpin += THREE.MathUtils.degToRad(boardSpinRate) * dt
-    this.roll = THREE.MathUtils.lerp(this.roll, -spinRate * 0.0016, 0.22)
+    this.roll = THREE.MathUtils.lerp(this.roll, -spinRate * 0.00035, 1-Math.exp(-5*dt))
     // Tiny air steer on velocity so lines stay controllable
-    const airSteer = (Number(input.state.airLeft) - Number(input.state.airRight)) * 2.45 * dt
+    const airSteer = (Number(input.state.airLeft) - Number(input.state.airRight)) * 0.7 * dt
     this.velocity.x += Math.cos(this.yaw) * airSteer
     this.velocity.z -= Math.sin(this.yaw) * airSteer
 
@@ -355,8 +359,8 @@ export class SkaterController {
     const len = Math.max(0.01, rail.start.distanceTo(rail.end))
     const dir = this.tmp.copy(rail.end).sub(rail.start).normalize()
 
-    // Locked grind speed — slight accel so lines feel committed, not runaway
-    this.grindSpeed = THREE.MathUtils.clamp(this.grindSpeed + dt * 1.8, 6.5, 16)
+    // Rails carry entry momentum and gradually scrub speed.
+    this.grindSpeed = THREE.MathUtils.clamp(this.grindSpeed - dt * 0.65, 1.5, 9.5)
     const along = this.grindSpeed
     const prevT = this.grindT
     this.grindT += (along * dt) / len
@@ -404,6 +408,7 @@ export class SkaterController {
     prevT: number,
   ): void {
     this.scoring.endGrind(now)
+    this.rampAir = false
     this.grindRail = null
     this.phase = 'air'
     this.scoring.beginAir()
@@ -411,9 +416,9 @@ export class SkaterController {
     // Keep grind travel vector (incl. slope); pop adds world-up hop
     const keep = popped ? along * 1.05 : naturalEnd ? along * 0.92 : along
     this.velocity.copy(dir).multiplyScalar(keep)
-    this.velocity.y += popped ? 6.2 : naturalEnd ? 1.6 : 2.4
+    this.velocity.y += popped ? 2.8 : naturalEnd ? 0.8 : 1.2
     if (popped) {
-      this.velocity.addScaledVector(dir, 1.2)
+      // Pop adds vertical lift without creating free forward speed.
     }
     // Nudge slightly past rail tip so we don't instantly remagnetize
     if (naturalEnd) {
@@ -428,9 +433,10 @@ export class SkaterController {
   }
 
   private resolveLanding(now: number): void {
-    // Snap board rotations into nearest upright half-turn for forgiveness
+    this.rampAir = false
+    // Deck must return upright; a half flip leaves the wheels facing upward.
     const normBoard = Math.abs(((this.boardSpin % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2))
-    const boardErr = Math.min(normBoard, Math.PI * 2 - normBoard, Math.abs(normBoard - Math.PI))
+    const boardErr = Math.min(normBoard, Math.PI * 2 - normBoard)
     const normPitch = Math.abs(((this.pitch % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2))
     const pitchErr = Math.min(normPitch, Math.PI * 2 - normPitch)
     const normRoll = Math.abs(((this.roll % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2))
@@ -490,7 +496,7 @@ export class SkaterController {
     this.grindT = THREE.MathUtils.clamp(closest, 0.04, 0.96)
     this.grindSide = 1
     const entry = Math.hypot(this.velocity.x, this.velocity.z)
-    this.grindSpeed = THREE.MathUtils.clamp(Math.max(entry * 1.05, 7.0), 7.0, 14.5)
+    this.grindSpeed = THREE.MathUtils.clamp(entry * 0.98, 2.2, 9.5)
     this.grindFxAcc = 0
     this.scoring.beginGrind()
     this.scoring.cancelAir()

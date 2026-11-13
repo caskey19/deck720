@@ -59,6 +59,34 @@ for(const [file,builder] of parks){
  if(file==='TheYard')assert(air,'Yard: hub should launch')
  console.log(`${file}: ${meshes} meshes, ${Math.round(triangles)} triangles, idle stable, push reaches z=${skater.position.z.toFixed(1)}, finished=${skater.finished}`)
 }
+// Flat ground has no launch zones: assert a human-scale hop, not ramp airtime.
+const flat={group:new THREE.Group(),spawn:new THREE.Vector3(0,0.12,0),spawnYaw:0,finishZ:999,groundY:0,rails:[],ramps:[],solids:[],pads:[],bounds:{minX:-100,maxX:100,minZ:-100,maxZ:1000}}
+function hop(holdFrames,hz){
+ const skater=new SkaterController(flat,new Scoring()),input=new Input(),dt=1/hz
+ input.state.pop=true
+ for(let i=0;i<holdFrames;i++)skater.update(dt,input,i*1000/hz)
+ input.state.pop=false;input.state.popJustReleased=true;skater.update(dt,input,1000)
+ input.state.airDown=true;input.state.airLeft=true
+ let apex=0,maxPitch=0,maxYaw=0,frames=0
+ while(skater.phase==='air'&&frames<hz*3){skater.update(dt,input,1000+frames*1000/hz);apex=Math.max(apex,skater.position.y-0.12);maxPitch=Math.max(maxPitch,Math.abs(skater.pitch));maxYaw=Math.max(maxYaw,Math.abs(skater.yaw));frames++}
+ assert(maxPitch<=0.21,'flat ollie must not turn into a body backflip')
+ assert(maxYaw<Math.PI*1.08,'flat-ground air should not allow repeated body spins')
+ assert(Math.abs(skater.position.z)<1,'stationary pop must not propel the rider forward')
+ return {apex,airtime:frames/hz}
+}
+const tap=hop(1,60),full=hop(40,60)
+assert(tap.apex>0.2&&tap.apex<0.35,`tap ollie height ${tap.apex}`)
+assert(full.apex>0.5&&full.apex<0.7,`charged ollie height ${full.apex}`)
+for(const hz of [30,120])assert(Math.abs(hop(hz,hz).apex-full.apex)<0.05,'jump height should stay similar across frame rates')
+const keyboard=new Input();keyboard.apply('KeyW',true);assert(keyboard.state.forward&&!keyboard.state.airUp,'pushing W must not also frontflip')
+const {followYaw,DEFAULT_CAMERA}=await import('../.verify/src/game/camera/settings.ts')
+assert.equal(DEFAULT_CAMERA.height,1.3);assert.equal(DEFAULT_CAMERA.distance,4.3);assert.equal(DEFAULT_CAMERA.fov,58)
+let yaw=0
+for(let i=0;i<60;i++)yaw=followYaw(yaw,Math.PI,1/60,false)
+assert(yaw<=0.951,'camera yaw must be limited to a calm turn rate')
+assert(Math.abs(followYaw(Math.PI-0.01,-Math.PI+0.01,1/60,false)-(Math.PI-0.01))<0.01,'camera wraps without a 360-degree snap')
+console.log(`Ground ollies: tap ${tap.apex.toFixed(2)}m, charged ${full.apex.toFixed(2)}m, airtime ${full.airtime.toFixed(2)}s; flat body flips blocked`)
+console.log('Camera: 1.3m / 4.3m / 58deg defaults, bounded yaw and seam wrapping passed')
 const rider=new Rider()
 assert(DEFAULT_KIT,'default kit export')
 rider.applyKit(DEFAULT_KIT)

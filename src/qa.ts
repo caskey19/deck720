@@ -27,7 +27,7 @@ try {
     renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5))
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap
     renderer.debug.onShaderError = () => { shaderErrors++; status.textContent = 'Shader error: inspect browser developer console before shipping.' }
     const scene = new THREE.Scene()
     const ids=['the-yard','forest-line','apex','big-air','channel','the-yard']

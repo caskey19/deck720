@@ -78,10 +78,10 @@ export function saveSettings(partial: Partial<DeckSettings>): void {
 
 export const DEFAULT_KIT: KitSelection = {
   deck: 'ember',
-  shirt: 'ink',
-  pants: 'slate',
-  shoes: 'gum',
-  hat: 'none',
+  shirt: 'navy',
+  pants: 'wash',
+  shoes: 'black',
+  hat: 'helmet',
 }
 
 export function loadKit(): KitSelection {

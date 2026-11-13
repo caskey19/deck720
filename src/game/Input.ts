@@ -86,8 +86,6 @@ export class Input {
     // Mirror keyboard apply() so air tricks work from touch pads
     if (key === 'left') this.state.airLeft = down
     if (key === 'right') this.state.airRight = down
-    if (key === 'forward') this.state.airUp = down
-    if (key === 'back') this.state.airDown = down
   }
 
   pulsePopRelease(): void {
@@ -129,11 +127,9 @@ export class Input {
     switch (code) {
       case 'KeyW':
         s.forward = down
-        s.airUp = down
         break
       case 'KeyS':
         s.back = down
-        s.airDown = down
         break
       case 'KeyA':
         s.left = down

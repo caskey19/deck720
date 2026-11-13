@@ -1183,3 +1183,10 @@ button {
 .kit-preview canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 .kit-preview-controls { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.45rem 0.75rem; background: #182322; font-size: 0.78rem; color: #d6ded4; }
 .kit-preview-controls .btn { padding: 0.35rem 0.65rem; font-size: 0.75rem; }
+
+.camera-options { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: 10px; }
+.camera-options h2 { margin: 0 0 0.6rem; font-size: 1.1rem; }
+.camera-option { display: grid; grid-template-columns: 8.5rem 1fr 3.5rem; align-items: center; gap: 0.7rem; margin: 0.8rem 0; font-size: 0.8rem; }
+.camera-option input { width: 100%; accent-color: var(--accent); }
+.camera-option output { text-align: right; font-variant-numeric: tabular-nums; }
+@media(max-width:500px){.camera-option{grid-template-columns:6rem 1fr 3rem;gap:0.4rem;}}
