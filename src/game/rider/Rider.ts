@@ -88,8 +88,17 @@ export class Rider {
     nose.position.set(0, 0, 0.145)
     this.headMesh.add(nose)
     const brim = new THREE.Mesh(new RoundedBoxGeometry(0.27, 0.025, 0.2, 2, 0.015), this.hatMesh.material)
+    brim.name = 'cap brim'
     brim.position.set(0, -0.02, 0.12)
     this.hatMesh.add(brim)
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.025, 16), this.hatMesh.material)
+    rim.name = 'bucket rim'
+    rim.position.y = -0.05
+    rim.visible = false
+    this.hatMesh.add(rim)
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.157, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.48), new THREE.MeshStandardMaterial({color:'#3e3026',roughness:1}))
+    hair.position.y = 0.035
+    this.headMesh.add(hair)
     this.body.position.y = 0.02
 
     // Board — longer deck silhouette
@@ -153,18 +162,9 @@ export class Rider {
       shoe.add(sole)
     }
     this.board.add(this.deckMesh, truckF, truckB, ...wheels, this.shoeL, this.shoeR)
-    this.board.position.y = 0.12
+    this.board.position.y = 0.025
 
-    // Soft ground blob for readable contact
-    const shadow = new THREE.Mesh(
-      new THREE.CircleGeometry(0.42, 16),
-      new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.28, depthWrite: false }),
-    )
-    shadow.rotation.x = -Math.PI / 2
-    shadow.position.y = 0.02
-    shadow.renderOrder = -1
-
-    this.group.add(shadow, this.board, this.body)
+    this.group.add(this.board, this.body)
     this.group.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) {
         o.castShadow = true
@@ -186,6 +186,9 @@ export class Rider {
     ;(this.shoeL.material as THREE.MeshStandardMaterial).color.set(shoes.color)
     ;(this.shoeR.material as THREE.MeshStandardMaterial).color.set(shoes.color)
 
+    this.hatMesh.getObjectByName('cap brim')!.visible = kit.hat === 'cap'
+    this.hatMesh.getObjectByName('bucket rim')!.visible = kit.hat === 'bucket'
+    this.hatMesh.scale.set(1, kit.hat === 'beanie' ? 1.5 : 1, 1)
     if (kit.hat === 'none') {
       this.hatMesh.visible = false
     } else {

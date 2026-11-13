@@ -80,7 +80,7 @@ export function buildChannel(): ParkData {
   group.add(bank)
   solids.push(solidFromCenter(-2.7, 0.45, 42, 0.7, 1.0, 5))
   solids.push(solidFromCenter(2.7, 0.45, 42, 0.7, 1.0, 5))
-  solids.push(solidFromCenter(0, 0.45, 39.8, 4.2, 1.0, 0.6))
+  // Center approach stays clear so the ramp trigger is reachable.
 
   const lip = new THREE.Mesh(new THREE.BoxGeometry(5, 0.32, 3), concrete('#8d867b'))
   lip.position.set(0, 0.85, 44.6)
@@ -88,7 +88,7 @@ export function buildChannel(): ParkData {
   lip.castShadow = true
   group.add(lip)
   ramps.push({
-    min: new THREE.Vector3(-2.8, 0, 42.2),
+    min: new THREE.Vector3(-2.8, 0, 39.1),
     max: new THREE.Vector3(2.8, 2.4, 48),
     launchDir: new THREE.Vector3(0, 0, 1),
     launchSpeed: 3.2,

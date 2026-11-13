@@ -26,7 +26,7 @@ function texture(kind: Surface): THREE.CanvasTexture {
   ctx.putImageData(data, 0, 0)
   const map = new THREE.CanvasTexture(canvas)
   map.wrapS = map.wrapT = THREE.RepeatWrapping
-  map.repeat.set(kind === 'asphalt' ? 12 : 4, kind === 'asphalt' ? 42 : 12)
+  map.repeat.set(1, 1)
   map.colorSpace = THREE.SRGBColorSpace
   map.anisotropy = 4
   textures.set(kind, map)
@@ -43,6 +43,7 @@ export function surface(kind: Surface, color?: string): THREE.MeshStandardMateri
     roughness: kind === 'steel' ? 0.38 : kind === 'paint' ? 0.65 : 0.92,
     metalness: kind === 'steel' ? 0.72 : 0,
   }))
+  materials.get(key)!.userData.sharedSurface = true
   return materials.get(key)!
 }
 

@@ -21,7 +21,7 @@ export function buildBigAir(): ParkData {
 
   const ground = new THREE.Mesh(
     new THREE.BoxGeometry(30, 0.4, 140),
-    new THREE.MeshStandardMaterial({ color: '#2c2a27', roughness: 0.96 }),
+    surface('asphalt'),
   )
   ground.position.set(0, -0.2, 50)
   ground.receiveShadow = true
@@ -53,7 +53,7 @@ export function buildBigAir(): ParkData {
   group.add(hub)
   solids.push(solidFromCenter(-4.2, 0.7, 46, 1.4, 1.6, 5))
   solids.push(solidFromCenter(4.2, 0.7, 46, 1.4, 1.6, 5))
-  solids.push(solidFromCenter(0, 0.7, 43.8, 7, 1.6, 0.8))
+  // Center approach stays clear so the ramp trigger is reachable.
 
   const launch = new THREE.Mesh(new THREE.BoxGeometry(8, 0.4, 4), concrete('#8d867b'))
   launch.position.set(0, 1.15, 49.2)
@@ -61,7 +61,7 @@ export function buildBigAir(): ParkData {
   launch.castShadow = true
   group.add(launch)
   ramps.push({
-    min: new THREE.Vector3(-4.5, 0, 46.5),
+    min: new THREE.Vector3(-4.5, 0, 43.1),
     max: new THREE.Vector3(4.5, 3.2, 53),
     launchDir: new THREE.Vector3(0, 0, 1),
     launchSpeed: 5.2,

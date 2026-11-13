@@ -71,14 +71,14 @@ export function buildApex(): ParkData {
   group.add(spine)
   solids.push(solidFromCenter(-2.2, 0.45, 48, 0.9, 1.0, 3.2))
   solids.push(solidFromCenter(2.2, 0.45, 48, 0.9, 1.0, 3.2))
-  solids.push(solidFromCenter(0, 0.45, 46.6, 3.6, 1.0, 0.55))
+  // Center approach stays clear so the ramp trigger is reachable.
 
   const lip = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.3, 2.8), concrete('#7d766c'))
   lip.position.set(0, 0.75, 50.2)
   lip.rotation.x = -0.4
   group.add(lip)
   ramps.push({
-    min: new THREE.Vector3(-2.6, 0, 48.2),
+    min: new THREE.Vector3(-2.6, 0, 46.1),
     max: new THREE.Vector3(2.6, 2.5, 53),
     launchDir: new THREE.Vector3(0, 0, 1),
     launchSpeed: 4.0,

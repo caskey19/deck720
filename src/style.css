@@ -613,7 +613,7 @@ button {
   justify-content: space-between;
   align-items: flex-start;
   padding: 0.85rem 1.1rem;
-  background: linear-gradient(180deg, rgba(8, 7, 6, 0.55), transparent 85%);
+  background: linear-gradient(180deg, rgba(8, 12, 13, 0.82), transparent 95%);
 }
 
 .hud-run-meta {
@@ -1171,3 +1171,7 @@ button {
 .hidden {
   display: none !important;
 }
+
+/* Keep run labels legible against warm concrete and sky. */
+.hud-run-meta { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
+.hud-run-mode { color: #dedfd6; }

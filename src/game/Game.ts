@@ -1,3 +1,5 @@
+import { disposeObject } from './park/dispose'
+import { batchPark } from './park/batch'
 import * as THREE from 'three'
 import { Input } from './Input'
 import { buildTheYard, type ParkData } from './park/TheYard'
@@ -105,6 +107,7 @@ export class Game {
   dispose(): void {
     cancelAnimationFrame(this.anim)
     window.removeEventListener('resize', this.onResize)
+    this.clearWorld()
     this.input.dispose()
     this.renderer.dispose()
   }
@@ -175,6 +178,7 @@ export class Game {
     this.ghostRider = null
     this.ghostFrames = []
     this.ghostIndex = 0
+    disposeObject(this.scene)
     while (this.scene.children.length) this.scene.remove(this.scene.children[0])
     this.park = null
     this.skater = null
@@ -220,15 +224,15 @@ export class Game {
   private buildPark(id: ParkId): ParkData {
     switch (id) {
       case 'forest-line':
-        return buildForestLine()
+        return batchPark(buildForestLine())
       case 'apex':
-        return buildApex()
+        return batchPark(buildApex())
       case 'big-air':
-        return buildBigAir()
+        return batchPark(buildBigAir())
       case 'channel':
-        return buildChannel()
+        return batchPark(buildChannel())
       default:
-        return buildTheYard()
+        return batchPark(buildTheYard())
     }
   }
 
@@ -307,6 +311,7 @@ export class Game {
     this.ghostFrames = loadGhostFrames(this.parkId)
     this.ghostIndex = 0
     if (this.ghostRider) {
+      disposeObject(this.ghostRider.group)
       this.scene.remove(this.ghostRider.group)
       this.ghostRider = null
     }
@@ -320,19 +325,16 @@ export class Game {
       opacity: 0.42,
       depthWrite: false,
     })
+    const oldMaterials = new Set<THREE.Material>()
     this.ghostRider.group.traverse((o) => {
       const m = o as THREE.Mesh
-      if (m.isMesh) {
-        if (Array.isArray(m.material)) {
-          m.material.forEach((mat) => mat.dispose())
-        } else {
-          m.material.dispose()
-        }
-        m.material = ghostMat
-        m.castShadow = false
-        m.receiveShadow = false
-      }
+      if (!m.isMesh) return
+      for (const material of Array.isArray(m.material) ? m.material : [m.material]) oldMaterials.add(material)
+      m.material = ghostMat
+      m.castShadow = false
+      m.receiveShadow = false
     })
+    oldMaterials.forEach(material => material.dispose())
     // Ground ring so the ghost reads even at distance
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.55, 0.72, 24),
@@ -719,7 +721,7 @@ export class Game {
       el('div', { className: 'screen map-screen' }, [
         el('div', { className: 'map-header' }, [
           el('div', {}, [
-            el('div', { className: 'score-label', text: 'Mountain map' }),
+            el('div', { className: 'score-label', text: 'Park map' }),
             el('h1', { className: 'map-title', text: 'Pick a park' }),
           ]),
           back,

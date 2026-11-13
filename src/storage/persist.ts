@@ -41,6 +41,11 @@ const GHOST_KEY = 'deck7.ghost'
 const SETTINGS_KEY = 'deck7.settings'
 const SESSION_KEY = 'deck7.session'
 
+// Keep old records intact, but never race a ghost from the retired 104m Yard.
+function courseKey(parkId: string): string {
+  return parkId === 'the-yard' ? 'the-yard.courtyard-v2' : parkId
+}
+
 export type DeckSettings = {
   ghostEnabled: boolean
 }
@@ -92,6 +97,7 @@ export function saveKit(kit: KitSelection): void {
 }
 
 export function loadBestScore(parkId: string): number {
+  parkId = courseKey(parkId)
   try {
     const raw = localStorage.getItem(BEST_KEY)
     if (!raw) return 0
@@ -103,6 +109,7 @@ export function loadBestScore(parkId: string): number {
 }
 
 export function saveBestScore(parkId: string, score: number): void {
+  parkId = courseKey(parkId)
   try {
     const raw = localStorage.getItem(BEST_KEY)
     const map = raw ? (JSON.parse(raw) as Record<string, number>) : {}
@@ -140,6 +147,7 @@ export function saveReplay(replay: SavedReplayMeta): void {
 
 /** Sparse ghost frames for PB race (keep short to fit localStorage). */
 export function loadGhostFrames(parkId: string): ReplayFrame[] {
+  parkId = courseKey(parkId)
   try {
     const raw = localStorage.getItem(GHOST_KEY)
     if (!raw) return []
@@ -151,6 +159,7 @@ export function loadGhostFrames(parkId: string): ReplayFrame[] {
 }
 
 export function saveGhostFrames(parkId: string, frames: ReplayFrame[], score: number): void {
+  parkId = courseKey(parkId)
   try {
     const best = loadBestScore(parkId)
     // Only store when this score is the current best (caller saves score first)
@@ -193,6 +202,7 @@ export function noteSessionRun(score: number): SessionStats {
 }
 
 export function clearParkRecord(parkId: string): void {
+  parkId = courseKey(parkId)
   try {
     const bestRaw = localStorage.getItem(BEST_KEY)
     if (bestRaw) {

@@ -20,14 +20,19 @@ compile('src')
 const ctx={createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){},fillRect(){},fillText(){}}
 globalThis.document={createElement:()=>({width:256,height:256,getContext:()=>ctx})}
 globalThis.window={addEventListener(){},removeEventListener(){}}
+const {batchPark}=await import('../.verify/src/game/park/batch.ts')
 const {SkaterController}=await import('../.verify/src/game/physics/SkaterController.ts')
 const {Scoring}=await import('../.verify/src/game/scoring/Scoring.ts')
 const {Input}=await import('../.verify/src/game/Input.ts')
+const THREE=await import('three')
 const {Rider}=await import('../.verify/src/game/rider/Rider.ts')
-const {DEFAULT_KIT}=await import('../.verify/src/storage/persist.ts')
+const persist=await import('../.verify/src/storage/persist.ts')
+const {DEFAULT_KIT}=persist
 const parks=[['TheYard','buildTheYard'],['ForestLine','buildForestLine'],['Apex','buildApex'],['BigAir','buildBigAir'],['Channel','buildChannel']]
 for(const [file,builder] of parks){
- const park=(await import(`../.verify/src/game/park/${file}.ts`))[builder]()
+ const park=batchPark((await import(`../.verify/src/game/park/${file}.ts`))[builder]())
+ assert(park.group.children.length < 100,`${file}: static batching budget`)
+ park.group.traverse(o=>{if(o.isMesh&&o.geometry.attributes.uv)for(const v of o.geometry.attributes.uv.array)assert(Number.isFinite(v),`${file}: invalid UV`)})
  let meshes=0,triangles=0
  park.group.traverse(o=>{if(o.isMesh){meshes++;const p=o.geometry.attributes.position;for(const v of p.array)assert(Number.isFinite(v),`${file}: nonfinite geometry`);triangles+=(o.geometry.index?o.geometry.index.count:p.count)/3*(o.isInstancedMesh?o.count:1)}})
  for(const p of park.pads??[]) assert(p.min.x<p.max.x&&p.min.z<p.max.z,`${file}: pad bounds`)
@@ -40,12 +45,38 @@ for(const [file,builder] of parks){
  let air=false
  for(let i=0;i<2400&&!skater.finished;i++){skater.update(1/60,input,i/60);air ||= skater.phase==='air';assert(Number.isFinite(skater.position.length()),`${file}: unstable position`)}
  assert(skater.position.z>start.z+10,`${file}: blocked spawn`)
- if(file==='TheYard'){assert(skater.finished,'Yard: center line must reach finish');assert(air,'Yard: hub should launch')}
+ assert(skater.finished,`${file}: center line must reach finish`)
+ if(file==='TheYard')assert(air,'Yard: hub should launch')
  console.log(`${file}: ${meshes} meshes, ${Math.round(triangles)} triangles, idle stable, push reaches z=${skater.position.z.toFixed(1)}, finished=${skater.finished}`)
 }
 const rider=new Rider()
 assert(DEFAULT_KIT,'default kit export')
 rider.applyKit(DEFAULT_KIT)
 for(const crouch of [0,0.5,1])rider.setPose({crouch,boardSpin:1,boardRoll:0.3,lean:0.2,armsOut:1})
-console.log('Rider: cosmetics and pose smoke checks passed')
+const {DECKS,SHIRTS,PANTS,SHOES,HATS}=await import('../.verify/src/game/cosmetics.ts')
+for(const [key,options] of Object.entries({deck:DECKS,shirt:SHIRTS,pants:PANTS,shoes:SHOES,hat:HATS})) {
+ for(const option of options)rider.applyKit({...DEFAULT_KIT,[key]:option.id})
+}
+rider.group.updateMatrixWorld(true)
+rider.group.traverse(o=>{for(const value of o.matrixWorld.elements)assert(Number.isFinite(value),'nonfinite rider transform')})
+rider.setPose({crouch:0,boardSpin:0,boardRoll:0,lean:0,armsOut:0})
+rider.group.position.y=0.12
+rider.group.updateMatrixWorld(true)
+const boardBounds=new THREE.Box3().setFromObject(rider.board)
+assert(Math.abs(boardBounds.min.y)<0.003,`wheel contact should be within 3mm of ground, got ${boardBounds.min.y}`)
+const storage=new Map([['deck7.best',JSON.stringify({'the-yard':9999,'apex':200})],['deck7.ghost',JSON.stringify({'the-yard':[{t:0}]})]])
+globalThis.localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)}
+assert.equal(persist.loadBestScore('the-yard'),0,'old Yard PB isolated')
+assert.equal(persist.loadBestScore('apex'),200,'other park PB preserved')
+assert.deepEqual(persist.loadGhostFrames('the-yard'),[],'old Yard ghost isolated')
+persist.saveBestScore('the-yard',300)
+assert.equal(persist.loadBestScore('the-yard'),300)
+const frames=[{t:1,x:0,y:0,z:170,yaw:0,pitch:0,roll:0,boardSpin:0,state:'ground'}]
+persist.saveGhostFrames('the-yard',frames,300)
+assert.deepEqual(persist.loadGhostFrames('the-yard'),frames)
+persist.clearParkRecord('the-yard')
+assert.equal(persist.loadBestScore('the-yard'),0)
+assert.equal(JSON.parse(storage.get('deck7.best'))['the-yard'],9999,'legacy PB must remain stored')
+console.log('Rider: every cosmetic option and finite crouch/grab poses passed')
+console.log('Persistence: new Yard course records isolated; legacy and other park records retained')
 fs.rmSync(output,{recursive:true,force:true})
