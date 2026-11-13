@@ -18,3 +18,7 @@
 ## GitHub visual production session
 
 Delivered original materials, gradient skies, rounded rider, authored industrial Yard, static geometry batching, ramp approach fixes, wheel contact correction, record versioning and browser QA page. Build and CPU regression checks passed. Manual GPU validation pending. No unattended overnight worker was created.
+
+## Continued offline pass
+
+User explicitly authorized continued work without live hosting. Added Forest scenery, aligned Forest pad geometry, articulated knee/ankle rig, push cycle, independent board flips and pose-aware replay/ghosts. npm run build and npm run verify passed.

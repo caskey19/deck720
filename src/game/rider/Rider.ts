@@ -6,6 +6,7 @@ import type { KitSelection } from '../../storage/persist'
 export class Rider {
   readonly group = new THREE.Group()
   readonly board: THREE.Group
+  private feet = new THREE.Group()
   private body: THREE.Group
   private shirtMesh: THREE.Mesh
   private pantsMesh: THREE.Mesh
@@ -16,7 +17,15 @@ export class Rider {
   private headMesh: THREE.Mesh
   private armL: THREE.Mesh
   private armR: THREE.Mesh
-  private legs: THREE.Group[] = []
+  private legs: { thigh: THREE.Mesh; shin: THREE.Mesh; hip: THREE.Vector3 }[] = []
+  private poseState = { crouch: 0, lean: 0, armsOut: 0, push: 0 }
+  get replayPose() { return { ...this.poseState } }
+  private inverseBody = new THREE.Matrix4()
+  private ankle = new THREE.Vector3()
+  private knee = new THREE.Vector3()
+  private direction = new THREE.Vector3()
+  private bend = new THREE.Vector3()
+  private up = new THREE.Vector3(0, 1, 0)
 
   constructor() {
     this.body = new THREE.Group()
@@ -60,18 +69,13 @@ export class Rider {
     this.hatMesh.visible = false
 
     this.body.add(this.pantsMesh, this.shirtMesh, this.armL, this.armR, this.headMesh, this.hatMesh)
-    for (const [x, z] of [[-0.09, 0.22], [0.09, -0.22]]) {
-      const leg = new THREE.Group()
-      leg.position.set(x, 0.88, z)
-      const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.23, 3, 8), this.pantsMesh.material)
-      thigh.position.set(0, -0.17, 0.035)
-      thigh.rotation.x = -0.22
-      const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.095, 0.23, 3, 8), this.pantsMesh.material)
-      shin.position.set(0, -0.52, 0)
-      shin.rotation.x = 0.2
-      leg.add(thigh, shin)
-      this.legs.push(leg)
-      this.body.add(leg)
+    for (const [x, z] of [[-0.09, 0.18], [0.09, -0.18]]) {
+      const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.78, 3, 8), this.pantsMesh.material)
+      const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.095, 0.81, 3, 8), this.pantsMesh.material)
+      thigh.name = `rig thigh ${this.legs.length}`
+      shin.name = `rig shin ${this.legs.length}`
+      this.legs.push({ thigh, shin, hip: new THREE.Vector3(x, 0.85, z) })
+      this.body.add(thigh, shin)
     }
     // Hoodie hood, sleeve caps, nose and ears give the silhouette volume.
     const hood = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), this.shirtMesh.material)
@@ -161,10 +165,12 @@ export class Rider {
       sole.position.y = -0.05
       shoe.add(sole)
     }
-    this.board.add(this.deckMesh, truckF, truckB, ...wheels, this.shoeL, this.shoeR)
+    this.board.add(this.deckMesh, truckF, truckB, ...wheels)
+    this.feet.add(this.shoeL, this.shoeR)
+    this.feet.position.y = 0.025
     this.board.position.y = 0.025
 
-    this.group.add(this.board, this.body)
+    this.group.add(this.board, this.feet, this.body)
     this.group.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) {
         o.castShadow = true
@@ -203,25 +209,28 @@ export class Rider {
     boardRoll: number
     lean: number
     armsOut: number
+    push?: number
+    airborne?: boolean
   }): void {
     const crouch = THREE.MathUtils.clamp(opts.crouch, 0, 1)
     const grab = THREE.MathUtils.clamp(opts.armsOut, 0, 1)
+    const push = THREE.MathUtils.clamp(opts.push ?? 0, 0, 1)
+    this.poseState = { crouch, lean: opts.lean, armsOut: grab, push }
+    // Back foot traces a short push stroke while the front foot stays planted.
+    this.shoeR.position.set(0.035 + push * 0.28, 0.09 - Math.sin(push * Math.PI) * 0.16, -0.25 - push * 0.35)
     // Stronger crouch read while charging pop
     this.body.position.y = 0.02 - 0.28 * crouch
     this.body.rotation.x = 0.28 * crouch
     this.body.rotation.z = opts.lean * 0.28
     this.pantsMesh.position.y = 0.87 + 0.12 * crouch
-    for (const leg of this.legs) {
-      leg.scale.y = 1 - 0.18 * crouch
-      leg.rotation.x = -0.28 * crouch
-      leg.position.y = 0.88 + 0.12 * crouch
-    }
     this.shirtMesh.position.y = 1.2 - 0.12 * crouch
     this.headMesh.position.y = 1.62 - 0.14 * crouch
     this.hatMesh.position.y = 1.78 - 0.14 * crouch
 
     this.board.rotation.z = opts.boardSpin
     this.board.rotation.x = opts.boardRoll
+    this.feet.rotation.x = opts.boardRoll
+    this.feet.position.y = 0.025 + (opts.airborne ? 0.16 : 0)
 
     // Grab: arms reach down/out toward the board
     this.armL.rotation.x = -1.15 * grab
@@ -230,5 +239,38 @@ export class Rider {
     this.armR.rotation.z = -0.55 * grab
     this.armL.position.y = 1.15 - 0.08 * grab - 0.12 * crouch
     this.armR.position.y = 1.15 - 0.08 * grab - 0.12 * crouch
+    this.armL.rotation.x -= push * 0.25
+    this.armR.rotation.x += push * 0.2
+    this.solveLegs()
   }
+
+  /** Two equal-length segments bend toward the nose and keep ankles at the shoes. */
+  private solveLegs(): void {
+    this.body.updateMatrix()
+    this.feet.updateMatrix()
+    this.inverseBody.copy(this.body.matrix).invert()
+    const shoes = [this.shoeL, this.shoeR]
+    for (let i = 0; i < this.legs.length; i++) {
+      const { thigh, shin, hip } = this.legs[i]
+      this.ankle.copy(shoes[i].position)
+      this.ankle.y += 0.07
+      this.ankle.applyMatrix4(this.feet.matrix).applyMatrix4(this.inverseBody)
+      this.direction.subVectors(this.ankle, hip)
+      const distance = this.direction.length()
+      this.direction.normalize()
+      this.bend.set(0, 0, 1).addScaledVector(this.direction, -this.direction.z).normalize()
+      this.knee.copy(hip).lerp(this.ankle, 0.5).addScaledVector(this.bend, Math.sqrt(Math.max(0, 0.4 ** 2 - (distance / 2) ** 2)))
+      this.placeLimb(thigh, hip, this.knee)
+      this.placeLimb(shin, this.knee, this.ankle)
+    }
+  }
+
+  private placeLimb(mesh: THREE.Mesh, from: THREE.Vector3, to: THREE.Vector3): void {
+    this.direction.subVectors(to, from)
+    const length = this.direction.length()
+    mesh.position.copy(from).lerp(to, 0.5)
+    mesh.scale.y = length
+    mesh.quaternion.setFromUnitVectors(this.up, this.direction.normalize())
+  }
+
 }

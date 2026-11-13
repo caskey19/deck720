@@ -41,7 +41,7 @@ Run npm run dev and open http://127.0.0.1:3847/qa.html. This isolated review pag
 
 ## Remaining gaps
 
-Manual GPU validation is the next gate, not more speculative art edits. Check the actual revised chase frame, material brightness, sky shader, ramp clearance, quarter silhouette, grind contact, locker colors, ghost transparency, replay and mobile input. Browser policy rejected an inline isolated preview; do not try alternate surfaces to bypass that restriction. The available browser's localhost serves the user's original source, so it cannot validate this workspace until the new repo is run there.
+User authorized continued offline work without a live server. GPU validation remains pending, but does not block further repository work. Check the actual revised chase frame, material brightness, sky shader, ramp clearance, quarter silhouette, grind contact, locker colors, ghost transparency, replay and mobile input. Browser policy rejected an inline isolated preview; do not try alternate surfaces to bypass that restriction. The available browser's localhost serves the user's original source, so it cannot validate this workspace until the new repo is run there.
 
 Forest Line, Apex, Big Air and Channel still have their original sparse layouts. Their materials and sky improved, but their density does not yet match Yard. A genuine animated push cycle, bent knee rig, detailed deck graphics and course-aware legacy replay handling are future work. The build still reports a large shared Three.js chunk (about 613 KB raw, 156 KB gzip); no external texture packs were added.
 
@@ -52,3 +52,12 @@ Node 24 or newer. npm install; npm run dev. Open http://127.0.0.1:3847/. npm run
 ## Controls
 
 W push, S brake, A/D carve, Space charged ollie, Shift/Q/E grabs. Esc pause, hold R restart. Spawn stays stopped until pushed. Preserve travel yaw in air. No third-party assets.
+
+
+## Visual pass 3: Forest and articulated rider
+
+Forest Line now has 96 seeded instanced conifers in three canopy tiers, rock clusters, distant hills, side boardwalks and a timber shelter. Boundary walls lowered to reveal surroundings. Geometry for path, landing and finish pads now matches their declared tops; ledge bounds tightened and phantom kicker pad removed. Finish location remains unchanged. Batched Forest count: 25 meshes / 11,444 triangles including instances.
+
+Rider now uses a two-segment knee rig with ankles solved to shoe anchors during crouch, carve and push. Shoes are separated from the flipping deck and tuck slightly in air. Push animation runs only when pushing on the ground at lower speed. Replay frames optionally capture crouch, lean, grab and push; new playback and ghost interpolation use these while old frames still work.
+
+Build and CPU checks pass, including planted ankle endpoints across crouch/push combinations, independent feet during board flips and new/legacy replay playback. Visual timing and silhouette still require tomorrow's GPU review. No server publication or hosting change requested or performed.

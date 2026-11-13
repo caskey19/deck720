@@ -116,7 +116,7 @@ export class SkaterController {
 
     this.clampBounds()
     this.checkFinish()
-    this.syncRider(input)
+    this.syncRider(input, now)
     this.record(dt, now)
   }
 
@@ -606,7 +606,7 @@ export class SkaterController {
     }
   }
 
-  private syncRider(input?: Input): void {
+  private syncRider(input?: Input, now = 0): void {
     this.rider.group.position.copy(this.position)
     // Load crouch tips the nose slightly so pop charge reads on camera
     const chargePitch =
@@ -621,6 +621,9 @@ export class SkaterController {
       boardRoll: this.phase === 'grind' ? 0.15 : 0,
       lean: this.phase === 'ground' && input ? Number(input.state.left) - Number(input.state.right) : 0,
       armsOut: grabOut,
+      airborne: this.phase === 'air',
+      push: this.phase === 'ground' && input?.state.forward && this.speed < 18 && crouch < 0.05
+        ? Math.max(0, Math.sin(now * 0.009)) : 0,
     })
   }
 
@@ -637,6 +640,7 @@ export class SkaterController {
       pitch: this.pitch,
       roll: this.roll,
       boardSpin: this.boardSpin,
+      pose: this.rider.replayPose,
       state: this.phase,
     })
   }
@@ -649,6 +653,7 @@ export class SkaterController {
     this.boardSpin = frame.boardSpin
     this.phase = frame.state as RidePhase
     this.syncRider()
+    if (frame.pose) this.rider.setPose({ ...frame.pose, boardSpin: frame.boardSpin, boardRoll: this.phase === 'grind' ? 0.15 : 0, airborne: this.phase === 'air' })
   }
 
   get speed(): number {

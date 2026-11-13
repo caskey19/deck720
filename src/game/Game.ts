@@ -381,11 +381,13 @@ export class Game {
       lerpAngle(a.roll, b.roll),
     )
     this.ghostRider.setPose({
-      crouch: 0,
+      crouch: lerp(a.pose?.crouch ?? 0, b.pose?.crouch ?? 0),
       boardSpin: lerpAngle(a.boardSpin, b.boardSpin),
       boardRoll: a.state === 'grind' || b.state === 'grind' ? 0.15 : 0,
-      lean: 0,
-      armsOut: 0,
+      lean: lerp(a.pose?.lean ?? 0, b.pose?.lean ?? 0),
+      armsOut: lerp(a.pose?.armsOut ?? 0, b.pose?.armsOut ?? 0),
+      push: lerp(a.pose?.push ?? 0, b.pose?.push ?? 0),
+      airborne: a.state === 'air' || b.state === 'air',
     })
   }
 

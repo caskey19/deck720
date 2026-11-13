@@ -31,6 +31,7 @@ export type ReplayFrame = {
   pitch: number
   roll: number
   boardSpin: number
+  pose?: { crouch: number; lean: number; armsOut: number; push: number }
   state: string
 }
 

@@ -1,3 +1,4 @@
+import { forestScenery } from './forestScenery'
 import { surface, skyDome } from './materials'
 import * as THREE from 'three'
 import type { ParkData, RailSeg, RampZone, SolidBox } from './TheYard'
@@ -5,7 +6,7 @@ import { addBenches, addBollards, addPlanters } from './decor'
 
 function bark(): THREE.MeshStandardMaterial { return surface('wood') }
 
-function moss(): THREE.MeshStandardMaterial { return surface('rubber') }
+function moss(): THREE.MeshStandardMaterial { return surface('asphalt', '#59645d') }
 
 function steel(): THREE.MeshStandardMaterial { return surface('steel') }
 
@@ -30,11 +31,11 @@ export function buildForestLine(): ParkData {
 
   const wallMat = bark()
   for (const x of [-13.2, 13.2]) {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 2.0, 130), wallMat)
-    wall.position.set(x, 0.85, 48)
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.6, 130), wallMat)
+    wall.position.set(x, 0.1, 48)
     wall.castShadow = true
     group.add(wall)
-    solids.push(solidFromCenter(x, 0.85, 48, 0.55, 2.0, 130))
+    solids.push(solidFromCenter(x, 0.1, 48, 0.55, 0.6, 130))
   }
 
   // Start clearing
@@ -140,28 +141,25 @@ export function buildForestLine(): ParkData {
     [-9.5, 78],
   ], '#5a4a38')
 
-  // Trees (visual)
-  for (const [x, z] of [
-    [-10, 12],
-    [10, 30],
-    [-11, 55],
-    [11, 70],
-    [-9, 90],
+  forestScenery(group)
+  // Former invisible pad tops now have matching visible geometry.
+  for (const [x,z,w,d,h,kind] of [
+    [0,46,6,24,0.16,'asphalt'],[0,79,8,14,0.18,'wood'],[0,102,10,12,0.15,'wood'],
   ] as const) {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.32, 5, 8), bark())
-    trunk.position.set(x, 2.4, z)
-    group.add(trunk)
-    const canopy = new THREE.Mesh(new THREE.ConeGeometry(1.6, 3.2, 8), moss())
-    canopy.position.set(x, 5.4, z)
-    group.add(canopy)
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),surface(kind))
+    deck.position.set(x,h/2,z);deck.receiveShadow=true;group.add(deck)
   }
-
+  // Timber coping strips emphasize each grind line.
+  for(const [x,z,d,y] of [[-4,24,14,0.55],[3.8,94,8,0.52]]) {
+    const coping=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.03,d),steel())
+    coping.position.set(x,y,z);group.add(coping)
+  }
   const sky = skyDome('#597d72', '#c4c7a8')
   group.add(sky)
 
   return {
     group,
-    spawn: new THREE.Vector3(0, 0.35, 2),
+    spawn: new THREE.Vector3(0, 0.42, 2),
     spawnYaw: 0,
     finishZ: 100,
     groundY: 0,
@@ -169,17 +167,15 @@ export function buildForestLine(): ParkData {
     ramps,
     solids,
     pads: [
-      { min: new THREE.Vector3(-3.5, 0, -2), max: new THREE.Vector3(3.5, 0.3, 3.5) },
+      { min: new THREE.Vector3(-3.5, 0, -3.5), max: new THREE.Vector3(3.5, 0.3, 3.5) },
       // Timber ledge top
-      { min: new THREE.Vector3(-4.6, 0.2, 17), max: new THREE.Vector3(-3.4, 0.55, 31) },
+      { min: new THREE.Vector3(-4.55, 0.2, 17), max: new THREE.Vector3(-3.45, 0.53, 31) },
       // Path between ledge and kicker
       { min: new THREE.Vector3(-3, 0, 34), max: new THREE.Vector3(3, 0.16, 58) },
-      // Kicker deck top (approach lip)
-      { min: new THREE.Vector3(-2.5, 0.4, 62.5), max: new THREE.Vector3(2.5, 0.95, 67.5) },
       // Soft landing after kicker
       { min: new THREE.Vector3(-4, 0, 72), max: new THREE.Vector3(4, 0.18, 86) },
       // Log top
-      { min: new THREE.Vector3(3.2, 0.2, 90), max: new THREE.Vector3(4.4, 0.52, 98) },
+      { min: new THREE.Vector3(3.275, 0.2, 90), max: new THREE.Vector3(4.325, 0.5, 98) },
       // Finish clearing
       { min: new THREE.Vector3(-5, 0, 96), max: new THREE.Vector3(5, 0.15, 108) },
     ],
