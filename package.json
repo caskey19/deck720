@@ -1,0 +1,23 @@
+{
+  "name": "deck7",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 3847",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 3847",
+    "verify": "node scripts/verify.mjs"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.6"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
