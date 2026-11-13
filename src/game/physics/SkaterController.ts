@@ -26,6 +26,7 @@ export class SkaterController {
   private grindSpeed = 0
   private bailTimer = 0
   private launchedRamp = false
+  private previousReplayFrame: ReplayFrame | null = null
   private frames: ReplayFrame[] = []
   private recordAcc = 0
   private grindFxAcc = 0
@@ -65,6 +66,7 @@ export class SkaterController {
     this.bailTimer = 0
     this.launchedRamp = false
     this.finished = false
+    this.previousReplayFrame = null
     this.frames = []
     this.recordAcc = 0
     this.scoring.reset()
@@ -637,15 +639,23 @@ export class SkaterController {
       y: this.position.y,
       z: this.position.z,
       yaw: this.yaw,
-      pitch: this.pitch,
+      pitch: this.rider.group.rotation.x,
       roll: this.roll,
       boardSpin: this.boardSpin,
       pose: this.rider.replayPose,
+      velocity: {x:this.velocity.x,y:this.velocity.y,z:this.velocity.z},
       state: this.phase,
     })
   }
 
   applyReplayFrame(frame: ReplayFrame): void {
+    if(frame.velocity) this.velocity.set(frame.velocity.x,frame.velocity.y,frame.velocity.z)
+    else if(this.previousReplayFrame && frame.t!==this.previousReplayFrame.t){
+      const seconds=(frame.t-this.previousReplayFrame.t)/1000
+      this.velocity.set((frame.x-this.previousReplayFrame.x)/seconds,(frame.y-this.previousReplayFrame.y)/seconds,(frame.z-this.previousReplayFrame.z)/seconds)
+    } else if(!this.previousReplayFrame) this.velocity.set(0,0,0)
+    this.previousReplayFrame = frame
+    this.popCharge = 0
     this.position.set(frame.x, frame.y, frame.z)
     this.yaw = frame.yaw
     this.pitch = frame.pitch

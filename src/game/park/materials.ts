@@ -52,6 +52,25 @@ export function skyDome(top = '#537f9c', horizon = '#e4c6a0'): THREE.Mesh {
     side: THREE.BackSide, depthWrite: false,
     uniforms: { top: { value: new THREE.Color(top) }, horizon: { value: new THREE.Color(horizon) } },
     vertexShader: 'varying vec3 vPos; void main(){ vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-    fragmentShader: 'uniform vec3 top; uniform vec3 horizon; varying vec3 vPos; void main(){ float h=pow(clamp(normalize(vPos).y,0.0,1.0),0.65); gl_FragColor=vec4(mix(horizon,top,h),1.0);\n #include <tonemapping_fragment>\n #include <colorspace_fragment>\n }',
+    fragmentShader: `
+      uniform vec3 top; uniform vec3 horizon; varying vec3 vPos;
+      float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+      float cloudNoise(vec2 p) {
+        vec2 cell=floor(p),f=fract(p); f=f*f*(3.0-2.0*f);
+        return mix(mix(hash(cell),hash(cell+vec2(1.,0.)),f.x),mix(hash(cell+vec2(0.,1.)),hash(cell+vec2(1.)),f.x),f.y);
+      }
+      void main(){
+        vec3 direction=normalize(vPos);
+        float h=pow(clamp(direction.y,0.,1.),0.65);
+        vec3 color=mix(horizon,top,h);
+        vec2 p=vec2(atan(direction.z,direction.x)*3.5,direction.y*14.0);
+        float cloud=cloudNoise(p)*0.57+cloudNoise(p*2.1)*0.28+cloudNoise(p*4.3)*0.15;
+        cloud=smoothstep(0.61,0.8,cloud)*smoothstep(0.02,0.18,direction.y);
+        color=mix(color,vec3(0.94,0.93,0.88),cloud*0.48);
+        gl_FragColor=vec4(color,1.);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `,
   }))
 }

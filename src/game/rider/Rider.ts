@@ -106,6 +106,12 @@ export class Rider {
     rim.position.y = -0.05
     rim.visible = false
     this.hatMesh.add(rim)
+    const crown = new THREE.Mesh(new THREE.SphereGeometry(0.17,12,6,0,Math.PI*2,0,Math.PI/2),this.hatMesh.material)
+    crown.name='beanie crown';crown.scale.y=0.6;crown.position.y=0.05;crown.visible=false;this.hatMesh.add(crown)
+    for(const x of [-0.05,0.05]){
+      const eye=new THREE.Mesh(new THREE.SphereGeometry(0.012,6,4),new THREE.MeshStandardMaterial({color:'#302a25',roughness:1}))
+      eye.position.set(x,0.015,0.145);this.headMesh.add(eye)
+    }
     const hair = new THREE.Mesh(new THREE.SphereGeometry(0.157, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.48), new THREE.MeshStandardMaterial({color:'#3e3026',roughness:1}))
     hair.position.y = 0.035
     this.headMesh.add(hair)
@@ -222,7 +228,7 @@ export class Rider {
     ctx.font='12px sans-serif';ctx.fillText('DECK7',43,435)
     this.deckArtMap.needsUpdate=true
     this.hood.visible=kit.shirt==='rust'
-    for(const sleeve of this.sleeves){sleeve.scale.y=kit.shirt==='rust'?1.8:1;sleeve.position.y=kit.shirt==='rust'?-0.03:0.08}
+    for(const sleeve of this.sleeves){sleeve.scale.y=kit.shirt==='rust'?1.4:1;sleeve.position.y=kit.shirt==='rust'?0.02:0.08;sleeve.position.x=Math.sign(sleeve.position.x)*(kit.shirt==='rust'?0.33:0.27)}
     ;(this.deckMesh.material as THREE.MeshStandardMaterial).color.set(deck.color)
     ;(this.shirtMesh.material as THREE.MeshStandardMaterial).color.set(shirt.color)
     ;(this.pantsMesh.material as THREE.MeshStandardMaterial).color.set(pants.color)
@@ -231,6 +237,7 @@ export class Rider {
 
     this.hatMesh.getObjectByName('cap brim')!.visible = kit.hat === 'cap'
     this.hatMesh.getObjectByName('bucket rim')!.visible = kit.hat === 'bucket'
+    this.hatMesh.getObjectByName('beanie crown')!.visible = kit.hat === 'beanie'
     this.hatMesh.scale.set(1, kit.hat === 'beanie' ? 1.5 : 1, 1)
     if (kit.hat === 'none') {
       this.hatMesh.visible = false

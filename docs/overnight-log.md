@@ -26,3 +26,7 @@ User explicitly authorized continued work without live hosting. Added Forest sce
 ## Distinct park settings and collision consistency
 
 Authored Apex spectator setting, Big Air quarry setting and Channel canal street. Replaced block launches, aligned landing geometry, made stair treads rideable and raycast-checked nine points per pad. All five simulated runs finish. Build and verification passed.
+
+## Locker, sky and replay presentation
+
+Added rotatable 3D locker preview with kit updates, deck inspection, keyboard support and cleanup. Procedural clouds were inspected with actual source sky code in offline EGL rendering; illumination remains approximate. Added replay travel velocity and legacy position-derived travel so air camera yaw uses movement. Updated current handoff/backlog and left hosting deferred. Production build and expanded verification suite pass.

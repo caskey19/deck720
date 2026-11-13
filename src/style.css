@@ -1175,3 +1175,11 @@ button {
 /* Keep run labels legible against warm concrete and sky. */
 .hud-run-meta { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); }
 .hud-run-mode { color: #dedfd6; }
+
+
+.kit-preview { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 0 0 0.9rem; background: #718581; }
+.kit-preview canvas { display: block; width: 100%; height: 250px; cursor: grab; }
+.kit-preview canvas:active { cursor: grabbing; }
+.kit-preview canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.kit-preview-controls { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.45rem 0.75rem; background: #182322; font-size: 0.78rem; color: #d6ded4; }
+.kit-preview-controls .btn { padding: 0.35rem 0.65rem; font-size: 0.75rem; }

@@ -1,3 +1,4 @@
+import { KitPreview } from './rider/KitPreview'
 import { lightPark, followSun } from './park/atmosphere'
 import { disposeObject } from './park/dispose'
 import { batchPark } from './park/batch'
@@ -50,6 +51,7 @@ type Screen =
 
 export class Game {
   private ui: HTMLElement
+  private kitPreview: KitPreview | null = null
   private sunLight: THREE.DirectionalLight | null = null
   private renderer: THREE.WebGLRenderer
   private scene = new THREE.Scene()
@@ -149,6 +151,8 @@ export class Game {
       }
     } else if (this.screen === 'replay' && this.skater) {
       this.updateReplay(dt)
+    } else if (this.screen === 'locker') {
+      this.kitPreview?.render(dt)
     } else if (this.screen === 'paused') {
       if (this.input.consumePause()) {
         this.screen = 'riding'
@@ -176,6 +180,8 @@ export class Game {
   }
 
   private clearWorld(): void {
+    this.kitPreview?.dispose()
+    this.kitPreview = null
     this.fx?.dispose()
     this.fx = null
     this.ghostRider = null
@@ -545,7 +551,7 @@ export class Game {
       el('div', { className: 'lobby-basecamp' }, [
         el('div', { className: 'basecamp-panel panel' }, [
           el('div', { className: 'basecamp-head' }, [
-            el('span', { className: 'basecamp-kicker', text: 'Lift pass · Browser' }),
+            el('span', { className: 'basecamp-kicker', text: 'Open session · Browser' }),
             el('h1', { className: 'basecamp-title', text: 'Basecamp' }),
           ]),
           el('div', { className: 'mode-row' }, [
@@ -809,6 +815,10 @@ export class Game {
 
   private showLocker(): void {
     this.screen = 'locker'
+    const previousScroll = this.ui.querySelector('.sheet')?.scrollTop ?? 0
+    if (!this.kitPreview) {
+      try { this.kitPreview = new KitPreview(this.kit) } catch { /* Swatches remain usable if an extra context is unavailable. */ }
+    } else this.kitPreview.applyKit(this.kit)
     const sections: { title: string; key: keyof KitSelection; options: { id: string; label: string; color: string }[] }[] = [
       { title: 'Deck', key: 'deck', options: DECKS },
       { title: 'Shirt', key: 'shirt', options: SHIRTS },
@@ -821,6 +831,7 @@ export class Game {
       opts.find((o) => o.id === id)?.label ?? id
 
     const body: Node[] = [
+      this.kitPreview?.element ?? el('p', {className:'muted',text:'3D preview unavailable in this browser. Your selected kit still applies in-game.'}),
       el('p', { className: 'muted', text: 'Your kit shows on the rider in-run and in replays. Saved on this device.' }),
       el('div', { className: 'kit-summary' }, [
         el('div', { className: 'kit-summary-title', text: 'Current kit' }),
@@ -852,6 +863,8 @@ export class Game {
     }
 
     this.sheet('Locker', body, () => this.showLobby())
+    const sheet = this.ui.querySelector('.sheet')
+    if (sheet) sheet.scrollTop = previousScroll
   }
 
   private ensureHud(force = false): void {

@@ -1,8 +1,11 @@
 {
-  "cycle": 6,
-  "maxCycles": 6,
-  "night": 2,
-  "northStar": "Arcade Cork7-feel physics first; skate content; no Cork7 asset copy; UI freeze unless blocks ride test",
-  "status": "stopped_after_6",
+  "status": "repository_checkpoints_saved",
+  "phase": "visual_world_rider_and_replay_polish",
+  "deliveryRepository": "caskey19/deck720",
+  "branch": "main",
+  "validation": ["production_build", "five_center_line_finishes", "pad_geometry_raycast", "rider_contact_and_pose", "replay_compatibility", "offline_scene_review"],
+  "manualBrowserReview": "pending",
+  "hosting": "deferred_by_user",
+  "unattendedWorker": false,
   "timer": null
 }

@@ -45,8 +45,10 @@ npm run preview
 
 ## Visual production pass
 
-The Yard is now a 170m industrial courtyard with warehouses, tree wells, detailed street ledges, rails, a smooth quarter transition and an optional late kicker. Shared original procedural materials and gradient skies are used across all five parks. The rider has rounded clothing, separate legs, a shaped deck and kit variations.
+The Yard is now a 170m industrial courtyard with warehouses, tree wells, detailed street ledges, rails, a smooth quarter transition and an optional late kicker. Shared original procedural materials and gradient skies are used across all five parks. The rider has rounded clothing, articulated knees, a pushing stroke, a shaped deck, original deck art and kit variations. The Locker includes a rotatable 3D preview. Each park now has its own authored scenic setting.
 
 Use Node 24 or newer. Run `npm run verify` for CPU geometry, controller, cosmetic and persistence regression checks. Open `/qa.html` while the development server is running for a six-view browser review with kit cycling and shader diagnostics. This review page does not alter saved records.
 
 The redesigned Yard uses a new PB/ghost course version; old records remain stored. Manual GPU playtesting of this pass is still required. See `docs/codex-handoff.md` for validation limits and remaining art work.
+
+Offline source-geometry review: see [the labeled contact sheet](docs/review/README.md). These images use approximate illumination and are not browser gameplay captures.

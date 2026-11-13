@@ -70,7 +70,17 @@ for file in sorted(src.glob('*.json')):
  for mesh,_,vao,_ in gpu:
   if mesh['cast']:vao.render(moderngl.TRIANGLES)
  framebuffer.use();ctx.viewport=(0,0,width,height);framebuffer.clear(0,0,0,1,depth=1)
- ctx.disable(moderngl.DEPTH_TEST);sky_program['top'].value=linear(look['sky']);sky_program['horizon'].value=linear(look['horizon']);quad.render(moderngl.TRIANGLES)
+ ctx.disable(moderngl.DEPTH_TEST)
+ if data.get('sky'):
+  sky=data['sky']
+  vertex='#version 330\nin vec3 position;uniform mat4 projectionMatrix;uniform mat4 modelViewMatrix;\n'+sky['vertex'].replace('varying','out')
+  fragment='#version 330\nout vec4 frag;vec3 offlineAces(vec3 c){return clamp((c*(2.51*c+0.03))/(c*(2.43*c+0.59)+0.14),0.,1.); }\n'+sky['fragment'].replace('varying','in').replace('gl_FragColor','frag').replace('#include <tonemapping_fragment>','frag.rgb=offlineAces(frag.rgb*1.15);').replace('#include <colorspace_fragment>','frag.rgb=pow(frag.rgb,vec3(1./2.2));')
+  actual_sky=ctx.program(vertex_shader=vertex,fragment_shader=fragment)
+  actual_sky['projectionMatrix'].write(np.array(sky['projection'],dtype='f4').tobytes());actual_sky['modelViewMatrix'].write(np.array(sky['modelView'],dtype='f4').tobytes());actual_sky['top'].value=sky['top'];actual_sky['horizon'].value=sky['horizon']
+  sky_vbo=ctx.buffer(np.array(sky['positions'],dtype='f4').tobytes());sky_vao=ctx.vertex_array(actual_sky,[(sky_vbo,'3f','position')]);ctx.disable(moderngl.CULL_FACE);sky_vao.render(moderngl.TRIANGLES)
+  sky_vao.release();sky_vbo.release();actual_sky.release()
+ else:
+  sky_program['top'].value=linear(look['sky']);sky_program['horizon'].value=linear(look['horizon']);quad.render(moderngl.TRIANGLES)
  ctx.enable(moderngl.DEPTH_TEST)
  for uniform,key in [('vp','vp'),('shadow_matrix','shadowMatrix')]:program[uniform].write(np.array(data[key],dtype='f4').tobytes())
  program['sun'].value=data['sun'];program['camera'].value=data['camera'];program['fog_color'].value=linear(look['fog']);program['fill_color'].value=linear(look['fill']);program['sun_color'].value=linear(look['sun']);program['sun_power'].value=look['power'];program['fog_near'].value=look['near'];program['fog_far'].value=look['far']
@@ -95,5 +105,5 @@ for file in sorted(src.glob('*.json')):
  print(file.stem+': rendered offline',flush=True)
 sheet=Image.new('RGB',(1280,1080),'#172627')
 for i,frame in enumerate(frames):sheet.paste(frame,((i%2)*640,(i//2)*360))
-ImageDraw.Draw(sheet).text((660,800),'Actual source meshes and textures\nApproximate offline illumination\nNot a browser gameplay capture',fill='#f2dfb9')
+if len(frames)<6:ImageDraw.Draw(sheet).text((660,800),'Actual source meshes and textures\nApproximate offline illumination\nNot a browser gameplay capture',fill='#f2dfb9')
 sheet.save(out/'contact-sheet.png')

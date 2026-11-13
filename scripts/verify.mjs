@@ -107,6 +107,13 @@ replaySkater.applyReplayFrame({t:1,x:0,y:0.12,z:2,yaw:0,pitch:0,roll:0,boardSpin
 assert.equal(replaySkater.rider.replayPose.crouch,0.8,'new replay retains crouch')
 replaySkater.applyReplayFrame({t:1,x:0,y:0.12,z:2,yaw:0,pitch:0,roll:0,boardSpin:0,state:'ground'})
 assert.equal(replaySkater.rider.replayPose.crouch,0,'legacy replay stays readable')
+replaySkater.applyReplayFrame({t:100,x:0,y:1,z:10,yaw:2,pitch:0,roll:0,boardSpin:0,state:'air',velocity:{x:2,y:-1,z:12}})
+assert.equal(replaySkater.velocity.z,12,'new replay camera uses recorded travel velocity')
+const legacySkater=new SkaterController(replayPark,new Scoring())
+legacySkater.applyReplayFrame({t:100,x:0,y:1,z:10,yaw:2,pitch:0,roll:0,boardSpin:0,state:'air'})
+legacySkater.applyReplayFrame({t:200,x:0.2,y:0.9,z:11.2,yaw:2.5,pitch:0,roll:0,boardSpin:0,state:'air'})
+assert(Math.abs(legacySkater.velocity.z-12)<1e-6,'legacy replay derives travel from frame positions')
+console.log('Replay camera: recorded velocity and legacy position-derived travel pass')
 console.log('Rig: ankles track shoes, board flips independently, new and legacy replay poses pass')
 const storage=new Map([['deck7.best',JSON.stringify({'the-yard':9999,'apex':200})],['deck7.ghost',JSON.stringify({'the-yard':[{t:0}]})]])
 globalThis.localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)}
