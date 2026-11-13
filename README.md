@@ -61,3 +61,5 @@ Flat-ground ollies now rise about 0.28m on a tap and 0.60m at full charge. W pus
 The chase camera defaults to height 1.3m, distance 4.3m, angle 0 degrees and 58-degree FOV. Esc opens camera sliders, speed-FOV toggle and reset. Hold right mouse to look around at low sensitivity. Automatic camera yaw is damped and rate-limited; trick spins do not drive it.
 
 The default kit is an original navy zip jacket with grey hood, loose washed jeans, vulcanized shoes and a matte helmet. Existing cosmetic choices remain available.
+
+Scores and ghosts from the earlier high-jump physics remain stored as legacy records. New runs use a separate PB/ghost version so comparisons use the same rules.

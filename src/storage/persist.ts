@@ -45,7 +45,9 @@ const SESSION_KEY = 'deck7.session'
 
 // Keep old records intact, but never race a ghost from the retired 104m Yard.
 function courseKey(parkId: string): string {
-  return parkId === 'the-yard' ? 'the-yard.courtyard-v2' : parkId
+  if(parkId.endsWith('.grounded-v1'))return parkId
+  const course=parkId==='the-yard'?'the-yard.courtyard-v2':parkId
+  return `${course}.grounded-v1`
 }
 
 export type DeckSettings = {

@@ -106,6 +106,8 @@ export class Input {
 
   private onKeyDown = (e: KeyboardEvent): void => {
     if (!this.enabled) return
+    const target=e.target as HTMLElement | null
+    if(target?.closest?.('input, textarea, select, button, [contenteditable=true]'))return
     if (e.repeat) return
     this.apply(e.code, true)
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
