@@ -101,7 +101,7 @@ for file in sorted(src.glob('*.json')):
  draw=ImageDraw.Draw(image);draw.rectangle((0,0,750,36),fill='#172627');draw.text((12,10),data['name']+' | OFFLINE GEOMETRY REVIEW | APPROXIMATE LIGHTING',fill='#f2dfb9')
  image.save(out/(data['name']+'.png'))
  if data['name'] in ['RiderMute','RiderTail','RiderJapan']:grab_frames.append(image.resize((640,360)))
- else:frames.append(image.resize((640,360)))
+ elif data['name']!='Lobby':frames.append(image.resize((640,360)))
  for _,a,b,vbo in gpu:a.release();b.release();vbo.release()
  for texture in maps:texture.release()
  white.release();framebuffer.release();color_buffer.release();depth.release();shadow_frame.release();shadow.release()

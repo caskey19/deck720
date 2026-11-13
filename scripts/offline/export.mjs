@@ -16,16 +16,19 @@ const {batchPark}=await import(root+'src/game/park/batch.ts')
 const {lightPark,followSun,parkLook}=await import(root+'src/game/park/atmosphere.ts')
 const {Rider}=await import(root+'src/game/rider/Rider.ts')
 const {DEFAULT_KIT}=await import(root+'src/storage/persist.ts')
-const builders=[['TheYard','buildTheYard','the-yard'],['ForestLine','buildForestLine','forest-line'],['Apex','buildApex','apex'],['BigAir','buildBigAir','big-air'],['Channel','buildChannel','channel'],['Rider',null,'the-yard'],['RiderMute',null,'the-yard'],['RiderTail',null,'the-yard'],['RiderJapan',null,'the-yard']]
+const {LobbyStage}=await import(root+'src/game/lobby/LobbyStage.ts')
+const builders=[['TheYard','buildTheYard','the-yard'],['ForestLine','buildForestLine','forest-line'],['Apex','buildApex','apex'],['BigAir','buildBigAir','big-air'],['Channel','buildChannel','channel'],['Lobby',null,'the-yard'],['Rider',null,'the-yard'],['RiderMute',null,'the-yard'],['RiderTail',null,'the-yard'],['RiderJapan',null,'the-yard']]
 const outDir=process.argv[2]??'/tmp/deck7-scenes';fs.mkdirSync(outDir,{recursive:true})
 for(const [name,builder,id] of builders){
  const park=builder?batchPark((await import(root+`src/game/park/${name}.ts`))[builder]()):null
- const scene=new THREE.Scene();if(park)scene.add(park.group)
- else {const floor=new THREE.Mesh(new THREE.PlaneGeometry(50,50),new THREE.MeshStandardMaterial({color:'#8e9a8a',roughness:1}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor)}
- const rider=new Rider();rider.applyKit(DEFAULT_KIT);rider.group.position.set(0,0.12,builder?20:0);rider.setPose({crouch:builder?0.12:0.7,lean:0,armsOut:name==='Rider'?0:builder?0:1,boardSpin:0,boardRoll:0,airborne:!builder&&name!=='Rider',grab:name==='RiderTail'?'tail':name==='RiderJapan'?'japan':'mute'});scene.add(rider.group)
+ const lobby=name==='Lobby'?new LobbyStage(DEFAULT_KIT):null
+ const scene=lobby?lobby.scene:new THREE.Scene();if(park)scene.add(park.group)
+ else if(!lobby){const floor=new THREE.Mesh(new THREE.PlaneGeometry(50,50),new THREE.MeshStandardMaterial({color:'#8e9a8a',roughness:1}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor)}
+ const rider=new Rider();rider.applyKit(DEFAULT_KIT);rider.group.position.set(0,0.12,builder?20:0);rider.setPose({crouch:builder?0.12:0.7,lean:0,armsOut:name==='Rider'?0:builder?0:1,boardSpin:0,boardRoll:0,airborne:!builder&&name!=='Rider',grab:name==='RiderTail'?'tail':name==='RiderJapan'?'japan':'mute'});if(!lobby)scene.add(rider.group)
+ if(lobby)lobby.render({domElement:{clientWidth:1600,clientHeight:900},render(){}},0)
  const sun=lightPark(scene,id);followSun(sun,rider.group.position);scene.updateMatrixWorld(true);sun.shadow.updateMatrices(sun)
- const camera=new THREE.PerspectiveCamera(58,16/9,0.1,500)
- if(builder){camera.position.set(0,1.42,15.7);camera.lookAt(0,1.17,21.8)}else{camera.position.set(2.5,1.9,3.5);camera.lookAt(0,0.97,0)}
+ const camera=lobby?lobby.camera:new THREE.PerspectiveCamera(58,16/9,0.1,500)
+ if(lobby){}else if(builder){camera.position.set(0,1.42,15.7);camera.lookAt(0,1.17,21.8)}else{camera.position.set(2.5,1.9,3.5);camera.lookAt(0,0.97,0)}
  camera.updateMatrixWorld(true)
  let sky=null
  const textures=[],materials=[],meshes=[],materialIndex=new Map(),textureIndex=new Map()
@@ -41,20 +44,27 @@ for(const [name,builder,id] of builders){
    sky={vertex:object.material.vertexShader,fragment:object.material.fragmentShader,positions:Array.from(geometry.getAttribute('position').array),projection:camera.projectionMatrix.toArray(),modelView:new THREE.Matrix4().multiplyMatrices(camera.matrixWorldInverse,object.matrixWorld).toArray(),top:object.material.uniforms.top.value.toArray(),horizon:object.material.uniforms.horizon.value.toArray()}
    return
   }
-  if(!object.isMesh||!object.material.isMeshStandardMaterial)return
+  if(!object.isMesh)return
+  const objectMaterials=Array.isArray(object.material)?object.material:[object.material]
+  if(!objectMaterials.some(m=>m.isMeshStandardMaterial))return
   const geometry=object.geometry.index?object.geometry.toNonIndexed():object.geometry
   const p=geometry.getAttribute('position'),n=geometry.getAttribute('normal'),uv=geometry.getAttribute('uv')
-  const instances=object.isInstancedMesh?object.count:1,vertices=[]
+  const instances=object.isInstancedMesh?object.count:1
+  const groups=Array.isArray(object.material)?geometry.groups:[{start:0,count:p.count,materialIndex:0}]
+  for(const group of groups){
+  const material=objectMaterials[group.materialIndex];if(!group.count||!material?.isMeshStandardMaterial)continue
+  const vertices=[]
   for(let instance=0;instance<instances;instance++){
    const matrix=object.matrixWorld.clone()
    if(object.isInstancedMesh){const local=new THREE.Matrix4();object.getMatrixAt(instance,local);matrix.multiply(local)}
    const normals=new THREE.Matrix3().getNormalMatrix(matrix),v=new THREE.Vector3(),normal=new THREE.Vector3()
-   for(let i=0;i<p.count;i++){
+   for(let i=group.start;i<Math.min(p.count,group.start+group.count);i++){
     v.fromBufferAttribute(p,i).applyMatrix4(matrix);normal.fromBufferAttribute(n,i).applyMatrix3(normals).normalize()
     vertices.push(v.x,v.y,v.z,normal.x,normal.y,normal.z,uv?.getX(i)??0,uv?.getY(i)??0)
    }
   }
-  meshes.push({material:materialId(object.material),cast:object.castShadow,vertices})
+  meshes.push({material:materialId(material),cast:object.castShadow,vertices})
+  }
  })
  const vp=new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse)
  const lightVP=new THREE.Matrix4().multiplyMatrices(sun.shadow.camera.projectionMatrix,sun.shadow.camera.matrixWorldInverse)

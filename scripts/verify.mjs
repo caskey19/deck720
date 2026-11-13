@@ -202,6 +202,29 @@ assert.deepEqual(persist.loadGhostFrames('the-yard'),frames)
 persist.clearParkRecord('the-yard')
 assert.equal(persist.loadBestScore('the-yard'),0)
 assert.equal(JSON.parse(storage.get('deck7.best'))['the-yard'],9999,'legacy PB must remain stored')
-console.log('Rider: every cosmetic option and finite crouch/grab poses passed')
+// The visible clothing stays one surface through neutral, knee bend and grab poses.
+const {ClothLimb}=await import('../.verify/src/game/rider/ClothLimb.ts')
+for(const crouch of [0,0.34,1])for(const grab of ['mute','tail','japan']){
+ rider.setPose({crouch,boardSpin:0,boardRoll:0,lean:0.2,armsOut:crouch===1?1:0,airborne:true,grab})
+ let garments=0
+ rider.group.traverse(o=>{if(!(o instanceof ClothLimb))return;garments++
+  const pos=o.geometry.getAttribute('position'),norm=o.geometry.getAttribute('normal')
+  for(const value of pos.array)assert(Number.isFinite(value),'garment must remain finite during IK')
+  for(let i=0;i<norm.count;i++)assert(Math.abs(new THREE.Vector3().fromBufferAttribute(norm,i).length()-1)<1e-5,'garment normals must remain unit length')
+  for(let i=0;i<=28;i++)assert(new THREE.Vector3().fromBufferAttribute(pos,i*25).distanceTo(new THREE.Vector3().fromBufferAttribute(pos,i*25+24))<1e-5,'cloth seam must stay closed')
+ });assert.equal(garments,4,'four continuous garments replace the exposed limb segments')
+}
+rider.setLobbyPose(0);rider.group.updateMatrixWorld(true)
+const boardHeld=rider.board.position.clone();assert(boardHeld.x<-.4&&Math.abs(rider.board.rotation.x)>1.5,'lobby board held vertically')
+rider.setPose({crouch:0,boardSpin:0,boardRoll:0,lean:0,armsOut:0,airborne:false})
+assert.equal(rider.board.position.x,0);assert.equal(rider.board.rotation.x,0,'standing lobby pose must not leak into riding')
+const {LobbyStage}=await import('../.verify/src/game/lobby/LobbyStage.ts')
+const lobby=new LobbyStage(DEFAULT_KIT)
+let rendered=false
+lobby.render({domElement:{clientWidth:1600,clientHeight:900},render(){rendered=true}},0)
+assert(rendered&&lobby.camera.aspect===1600/900,'lobby reuses the game renderer')
+assert(lobby.camera.far>500,'full scenic sky must remain inside lobby far plane')
+lobby.dispose()
+console.log('Rider: continuous cloth, finite knee/grab poses, closed seams, lobby pose reset and all cosmetics passed')
 console.log('Persistence: new Yard course records isolated; legacy and other park records retained')
 fs.rmSync(output,{recursive:true,force:true})

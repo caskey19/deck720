@@ -1,3 +1,4 @@
+import { LobbyStage } from './lobby/LobbyStage'
 import { DEFAULT_CAMERA, loadCamera, saveCamera, followYaw, type CameraSettings } from './camera/settings'
 import { KitPreview } from './rider/KitPreview'
 import { lightPark, followSun } from './park/atmosphere'
@@ -52,11 +53,13 @@ type Screen =
 
 export class Game {
   private ui: HTMLElement
+  private lobbyStage: LobbyStage | null = null
+  private lobbyDragging = false
   private kitPreview: KitPreview | null = null
   private sunLight: THREE.DirectionalLight | null = null
   private renderer: THREE.WebGLRenderer
   private scene = new THREE.Scene()
-  private camera = new THREE.PerspectiveCamera(58, 1, 0.1, 300)
+  private camera = new THREE.PerspectiveCamera(58, 1, 0.1, 700)
   private input = new Input()
   private clock = new THREE.Clock()
   private park: ParkData | null = null
@@ -111,13 +114,14 @@ export class Game {
     window.addEventListener('resize', this.onResize)
     this.onResize()
     canvas.addEventListener('contextmenu',e=>e.preventDefault(),{signal:this.cameraEvents.signal})
-    canvas.addEventListener('pointerdown',e=>{if(e.button===2 && this.screen==='riding'){this.rightLook=true;canvas.setPointerCapture(e.pointerId)}},{signal:this.cameraEvents.signal})
+    canvas.addEventListener('pointerdown',e=>{if(e.button===0&&this.screen==='lobby'){this.lobbyDragging=true;canvas.setPointerCapture(e.pointerId)}if(e.button===2 && this.screen==='riding'){this.rightLook=true;canvas.setPointerCapture(e.pointerId)}},{signal:this.cameraEvents.signal})
     canvas.addEventListener('pointermove',e=>{
+      if(this.lobbyDragging&&this.screen==='lobby')this.lobbyStage?.rotate(e.movementX*0.006)
       if(!this.rightLook)return
       this.lookAroundYaw=THREE.MathUtils.clamp(this.lookAroundYaw-e.movementX*0.003*this.cameraSettings.sensitivity,-0.85,0.85)
       this.lookAroundPitch=THREE.MathUtils.clamp(this.lookAroundPitch+e.movementY*0.002*this.cameraSettings.sensitivity,-0.3,0.3)
     },{signal:this.cameraEvents.signal})
-    const releaseLook=()=>{this.rightLook=false}
+    const releaseLook=()=>{this.rightLook=false;this.lobbyDragging=false}
     canvas.addEventListener('pointerup',releaseLook,{signal:this.cameraEvents.signal});canvas.addEventListener('pointercancel',releaseLook,{signal:this.cameraEvents.signal})
     window.addEventListener('blur',releaseLook,{signal:this.cameraEvents.signal})
     this.showLobby()
@@ -182,6 +186,8 @@ export class Game {
     if (this.park) {
       if (this.sunLight && this.skater) followSun(this.sunLight, this.skater.position)
       this.renderer.render(this.scene, this.camera)
+    } else if (this.screen === 'lobby' && this.lobbyStage) {
+      this.lobbyStage.render(this.renderer,now)
     } else if (this.screen === 'lobby') {
       // Soft idle clear
       this.renderer.setClearColor('#0e0c0a')
@@ -198,6 +204,9 @@ export class Game {
   }
 
   private clearWorld(): void {
+    this.lobbyStage?.dispose()
+    this.lobbyStage=null
+    this.lobbyDragging=false
     this.kitPreview?.dispose()
     this.kitPreview = null
     this.fx?.dispose()
@@ -501,85 +510,52 @@ export class Game {
   // ——— UI ———
 
   private showLobby(): void {
-    this.screen = 'lobby'
-    this.input.enabled = false
-    this.clearWorld()
-    clear(this.ui)
-    const root = el('div', { className: 'screen lobby' }, [
-      el('div', { className: 'lobby-top' }, [
-        el('div', { className: 'brand' }, [
-          el('div', { className: 'brand-mark', text: 'DECK7' }),
-          el('div', { className: 'brand-sub', text: 'Basecamp' }),
+    this.screen='lobby';this.input.enabled=false;this.clearWorld();clear(this.ui)
+    this.lobbyStage=new LobbyStage(this.kit)
+    const best=Math.max(...(['the-yard','forest-line','apex','big-air','channel'] as ParkId[]).map(id=>loadBestScore(id)))
+    const session=loadSessionStats()
+    const ride=el('button',{className:'lobby-ride',text:'RIDE  ↗'}) as HTMLButtonElement
+    ride.addEventListener('click',()=>this.onRide())
+    const yard=el('button',{className:'lobby-feature-card',text:'THE YARD'})
+    yard.append(el('span',{text:'Transfers. Steel. Your next line.'}))
+    yard.addEventListener('click',()=>this.startPark('the-yard'))
+    const kit=el('button',{className:'lobby-feature-card kit-card',text:'YOUR KIT'})
+    kit.append(el('span',{text:'Build your own look'}));kit.addEventListener('click',()=>this.showLocker())
+    const controls=this.navBtn('Controls',()=>this.showControls())
+    const root=el('div',{className:'screen lobby lobby--scene'},[
+      el('header',{className:'lobby-top'},[
+        el('div',{className:'brand'},[el('div',{className:'brand-mark',text:'DECK7'}),el('div',{className:'brand-sub',text:'BASECAMP'})]),
+        el('nav',{className:'nav-links'},[
+          this.navBtn('Ride',()=>this.onRide(),true),this.navBtn('Locker',()=>this.showLocker()),
+          this.navBtn('Parks',()=>this.showMap()),this.navSoon('Replays'),controls,
         ]),
-        el('div', { className: 'nav-links' }, [
-          this.navBtn('Ride', () => {}, true),
-          this.navBtn('Locker', () => this.showLocker()),
-          this.navSoon('Shop'),
-          this.navSoon('Pass'),
-          this.navSoon('Leaderboard'),
-          this.navSoon('Replays'),
+        el('div',{className:'lobby-access',text:'FREE SKATE · LOCAL SESSION'}),
+      ]),
+      el('main',{className:'lobby-left'},[
+        el('section',{className:'lobby-session-card'},[
+          el('span',{className:'lobby-eyebrow',text:'YOUR SESSION'}),
+          el('div',{className:'lobby-session-title',text:best?`${best.toLocaleString()} BEST LINE`:'FIVE PARKS. ONE BOARD.'}),
+          el('div',{className:'lobby-rule'}),
+          el('span',{text:session.runs?`${session.runs} runs this session · keep your line alive`:'Drop in. Find your line. Make it yours.'}),
         ]),
-      ]),
-      el('div', { className: 'lobby-season-strip' }, [
-        el('span', { className: 'season-label', text: 'Season pass' }),
-        el('span', { className: 'season-tier', text: 'Tier · Free' }),
-        el('span', {
-          className: 'season-promo',
-          text: (() => {
-            const ses = loadSessionStats()
-            return ses.runs > 0
-              ? `Session · ${ses.runs} run${ses.runs === 1 ? '' : 's'} · best ${ses.bestThisSession}`
-              : 'Open session · Parks · Best'
-          })(),
-        }),
-        el('span', {
-          className: 'season-score',
-          text: String(
-            Math.max(
-              loadBestScore('the-yard'),
-              loadBestScore('forest-line'),
-              loadBestScore('apex'),
-              loadBestScore('big-air'),
-              loadBestScore('channel'),
-            ),
-          ),
-        }),
-      ]),
-      el('div', { className: 'lobby-park-bests' }, [
-        el('span', { text: `Yard ${loadBestScore('the-yard')}` }),
-        el('span', { text: `Forest ${loadBestScore('forest-line')}` }),
-        el('span', { text: `Apex ${loadBestScore('apex')}` }),
-        el('span', { text: `Big Air ${loadBestScore('big-air')}` }),
-        el('span', { text: `Channel ${loadBestScore('channel')}` }),
-      ]),
-      el('div', { className: 'lobby-basecamp' }, [
-        el('div', { className: 'basecamp-panel panel' }, [
-          el('div', { className: 'basecamp-head' }, [
-            el('span', { className: 'basecamp-kicker', text: 'Open session · Browser' }),
-            el('h1', { className: 'basecamp-title', text: 'Basecamp' }),
-          ]),
-          el('div', { className: 'mode-row' }, [
-            this.modeCard('solo', 'Solo', 'Drop in · chase your best.', true),
-            this.modeCard('multi', 'Multiplayer', 'Rooms when servers land.', false),
-          ]),
-          (() => {
-            const btn = el('button', { className: 'ride-btn', text: 'RIDE  ·  ENTER' }) as HTMLButtonElement
-            btn.addEventListener('click', () => this.onRide())
-            return btn
-          })(),
+        el('div',{className:'lobby-feature-grid'},[yard,kit]),
+        el('div',{className:'lobby-flex-spacer'}),
+        el('div',{className:'mode-row'},[
+          this.modeCard('solo','Solo','Parks · tricks · personal bests',true),
+          this.modeCard('multi','Multiplayer','Not available yet',false),
         ]),
+        el('div',{className:'lobby-ghost-note',text:'PB GHOST CHASE · Race your own best line'}),
+        ride,
       ]),
-      el('div', { className: 'lobby-footer' }, [
-        el('div', { className: 'lobby-footer-links' }, [
-          this.footerLink('About', () => this.showAbout()),
-          this.footerLink('How to play', () => this.showHowto()),
-          this.footerLink('Controls', () => this.showControls()),
-        ]),
-        el('span', { className: 'lobby-footer-note', text: 'Deck7 is original. Not affiliated with Cork7, SSX, or EA.' }),
+      el('div',{className:'lobby-rider-label'},[
+        el('span',{text:'LOCAL RIDER'}),el('strong',{text:'READY TO ROLL'}),el('small',{text:'Drag the scene to rotate your rider'}),
+      ]),
+      el('footer',{className:'lobby-footer'},[
+        el('div',{className:'lobby-footer-links'},[this.footerLink('About',()=>this.showAbout()),this.footerLink('How to play',()=>this.showHowto())]),
+        el('span',{className:'lobby-footer-note',text:'Original skate game · Free to ride'}),
       ]),
     ])
-    this.ui.append(root)
-    this.bindLobbyKeys()
+    this.ui.append(root);this.bindLobbyKeys()
   }
 
   private lobbyKeyHandler: ((e: KeyboardEvent) => void) | null = null
@@ -589,7 +565,7 @@ export class Game {
       window.removeEventListener('keydown', this.lobbyKeyHandler)
     }
     this.lobbyKeyHandler = (e: KeyboardEvent) => {
-      if (e.code === 'Enter' && this.screen === 'lobby') this.onRide()
+      if (e.code === 'Enter' && this.screen === 'lobby' && !(e.target as HTMLElement)?.closest?.('button,input,select,textarea')) this.onRide()
     }
     window.addEventListener('keydown', this.lobbyKeyHandler)
   }

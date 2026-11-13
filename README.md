@@ -25,7 +25,7 @@ Open **http://127.0.0.1:3847/** (Vite binds port `3847`).
 
 ## What’s in this slice
 
-- Basecamp lobby (Solo live · Multiplayer / Season / Leaderboard stubbed)
+- Live 3D skate Basecamp with a standing rider, held board and session cards (Solo live, Multiplayer unavailable)
 - Five parks: Yard, Forest Line, Apex, Big Air, Channel
 - Arcade skate physics, named tricks, combo HUD, local replays with scrubber
 - PB ghost race (localStorage), touch controls, RideFx juice
@@ -45,7 +45,7 @@ npm run preview
 
 ## Visual production pass
 
-The Yard is now a 170m industrial courtyard with warehouses, tree wells, detailed street ledges, rails, a smooth quarter transition and an optional late kicker. Shared original procedural materials and gradient skies are used across all five parks. The rider has rounded clothing, articulated knees, a pushing stroke, a shaped deck, original deck art and kit variations. The Locker includes a rotatable 3D preview. Each park now has its own authored scenic setting.
+The Yard is now a 170m industrial courtyard with warehouses, tree wells, detailed street ledges, rails, a smooth quarter transition and an optional late kicker. Shared original procedural materials and gradient skies are used across all five parks. The rider has continuous deforming sleeves and pant legs, articulated knees, a pushing stroke, a shaped deck, original deck art and kit variations. The Locker includes a rotatable 3D preview. Each park now has its own authored scenic setting.
 
 Use Node 24 or newer. Run `npm run verify` for CPU geometry, controller, cosmetic and persistence regression checks. Open `/qa.html` while the development server is running for a six-view browser review with kit cycling and shader diagnostics. This review page does not alter saved records.
 
@@ -63,3 +63,5 @@ The chase camera defaults to height 1.3m, distance 4.3m, angle 0 degrees and 58-
 The default kit is an original navy zip jacket with grey hood, loose washed jeans, vulcanized shoes and a matte helmet. Existing cosmetic choices remain available.
 
 Scores and ghosts from the earlier high-jump physics remain stored as legacy records. New runs use a separate PB/ghost version so comparisons use the same rules.
+
+Basecamp uses the actual skate courtyard as its full-screen scene. Drag the rider to rotate; Ride opens park selection and The Yard card drops straight in. Landing poses compress briefly and recover smoothly. Esc opens the adjustable third-person camera with height, distance, angle, FOV and sensitivity.

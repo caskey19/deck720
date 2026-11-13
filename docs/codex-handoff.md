@@ -6,7 +6,7 @@ Source archive: deck7-game-20261113-025247.zip, originally 38c658a8e2a55ba894806
 
 ## Current scope
 
-User authorized continued repository work without a live server and allowed a full Yard redesign. Style is believable materials with original stylized geometry. No third-party game assets, branding, frameworks or physics engines were added. Browser deployment and manual playtesting are deferred.
+User authorized continued repository work without a live server and allowed a full Yard redesign. Style is believable materials with original stylized geometry. No third-party game assets, branding, frameworks or physics engines were added. The owner-private playable preview is https://deck7-playable-preview.bpc75.chatgpt.site. The connected GPU browser supports live inspection; the cloud browser has no WebGL context.
 
 ## Shipped visual work
 
@@ -16,7 +16,7 @@ User authorized continued repository work without a live server and allowed a fu
 - Forest Line has 96 instanced conifers, rock clusters, hills, boardwalks and a timber shelter. Invisible pad tops now have matching geometry.
 - Apex has terraced spectator seating, a finish frame and timber pavilion. Big Air has quarry terraces, ridgeline, rock faces and overlook decks. Channel has a canal, promenade, storefronts, awnings, trees and a distant footbridge.
 - Block launches replaced by continuous sampled transitions. Playable-area benches, bollards, planters and lamps register collision boxes. Channel stairs have individual rideable treads and an actual landing deck.
-- Rounded rider body, separate two-segment legs with solved ankle placement, clothing volume, hair, simple face, distinct hats, shaped deck, trucks, wheels, grip grain, original color-matched D7 underside graphics and shoe soles.
+- Rounded rider body, continuous deforming pant legs with solved ankle placement, clothing volume, hair, simple face, distinct hats, shaped deck, trucks, wheels, grip grain, original color-matched D7 underside graphics and shoe soles.
 - Shoes remain independent of board flips, lift slightly in air, and trace a pushing stroke at low speed. Knee bends keep ankles attached through crouch and lean. Hoodie sleeves and hood vary with kit.
 - Locker now has a 3D turntable, drag/keyboard rotation and deck inspection. Kit changes reuse the preview and preserve scroll. The extra renderer is disposed on leaving the locker. Swatches remain available if an additional WebGL context fails.
 - New replay frames retain crouch, grab, lean, push and travel velocity. Ghost poses interpolate those fields. Legacy replays remain readable; their travel direction is derived from neighboring positions. Charge pitch is recorded from the drawn rider orientation.
@@ -25,7 +25,7 @@ User authorized continued repository work without a live server and allowed a fu
 
 ## Persistence and compatibility
 
-The redesigned Yard uses a new PB/ghost course key. Old Yard records remain stored but do not race against the new course. Other park record IDs remain unchanged. Old manually saved Yard replay trajectories remain stored and are not migrated; those recordings can mismatch the redesigned scenery.
+The redesigned Yard uses a new PB/ghost course key. Old Yard records remain stored but do not race against the new course. All parks now use the grounded-v1 physics key, preserving older stored records separately. Old manually saved Yard replay trajectories remain stored and are not migrated; those recordings can mismatch the redesigned scenery.
 
 ## Verification
 
@@ -49,7 +49,7 @@ Actual source meshes, rider and procedural texture pixels were exported and rend
 
 See `docs/review/README.md` and `scripts/offline/README.md`. Optional review dependencies are not shipped with the game.
 
-## Browser review tomorrow
+## Browser review and follow-up
 
 `npm run dev` uses http://127.0.0.1:3847/. `/qa.html` renders five parks and a rider view with kit cycling and shader diagnostics. No saved game data is touched. It updates at 15Hz and is not a benchmark. Actual game review should check the following:
 
@@ -99,3 +99,16 @@ Camera defaults follow the user's reference: 1.3m height, 4.3m distance, 0-degre
 Build and all five finish simulations pass. Added checks for tap/full jump height, frame-rate consistency, no flat-ground body flip, no W-triggered frontflip, calm camera yaw, angle wrapping and reference defaults. Physical simulation is still simplified arcade skating, not a full rigid-body model. Cloud preview lacks GPU; actual browser rendering is checked on the user's GPU browser after deployment. No first-person mode was added in this pass.
 
 Grounded physics PB/ghost keys are versioned for all five parks. Legacy scores and ghost data are retained in local storage but are not compared to new runs. This prevents old high-jump ghosts from appearing in the revised game. User GPU browser check confirmed the new default kit, working locker preview and camera controls at 1.3m / 4.3m / 0deg / 58deg.
+
+
+## Reference-driven lobby and clothing pass, 2026-11-13
+
+The supplied gameplay video was reviewed as motion reference: stable chase horizon, articulated knees after impact and continuous clothing. Reference imagery and footage were not included in game assets. The original skate courtyard replaces the ski resort setting.
+
+Basecamp now renders a full-screen live Yard scene through the existing game renderer, with a standing rider holding their selected board, subtle breathing and drag rotation. Navigation is across the top; session, Yard, kit and solo cards plus the Ride button are on the left. Lobby state and scene resources are released on riding transitions. No fake XP or online player counts were added.
+
+Four continuous deforming cloth meshes replace visible thigh/shin and arm segments. Joint solvers still connect hands and shoes, while smooth ring normals and closed texture seams avoid exposed elbow/knee caps. Torso and helmet tessellation increased; woven maps have subtler contrast. Kit changes, named grabs, recorded poses and cyan ghost material replacement remain compatible. The standing board/foot/hip transforms reset before skating.
+
+Landing compression now recovers over several tenths of a second instead of disappearing immediately. Flat-ground ollies remain 0.28m tap / 0.60m full charge, with around 0.70s full airtime; body flips require ramp airtime. Camera defaults remain height 1.3m, distance 4.3m and FOV58, with bounded yaw and low mouse sensitivity. Keyboard slider adjustment is verified in the connected browser. The riding camera far plane now contains the entire sky dome, fixing the visible polygon cut across the sky.
+
+Build and CPU verification pass, including continuous cloth finiteness, unit normals, closed seams, every cosmetic, grab anchors, lobby pose reset and all five center-line finishes. GPU browser inspection confirms the new lobby, Yard transition, continuous clothing and editable camera controls. Manual long-session physics tuning, all grabs in motion and mobile device performance remain follow-up work. The model is still a procedural stylized avatar, with simple hands/face, rather than an artist-rigged commercial character.

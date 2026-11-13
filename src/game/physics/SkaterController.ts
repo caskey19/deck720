@@ -128,7 +128,7 @@ export class SkaterController {
     this.clampBounds()
     this.checkFinish()
     if(phaseBefore==='air' && this.phase==='ground')this.landingCrouch=0.34
-    this.landingCrouch=THREE.MathUtils.damp(this.landingCrouch,0,16,dt)
+    this.landingCrouch=THREE.MathUtils.damp(this.landingCrouch,0,7,dt)
     const grab=this.phase==='air'?this.currentGrab(input):null
     if(grab)this.visualGrab=grab
     this.grabBlend=THREE.MathUtils.damp(this.grabBlend,grab?1:0,20,dt)
